@@ -32,7 +32,7 @@ function hud(back = false) {
 }
 
 function loadingView() {
-  return `<section class="screen loading">${button("Skip", "loading-skip", "home", 'aria-label="Skip loading"')}</section>`;
+  return `<section class="screen loading"><div class="loading-progress" aria-hidden="true"></div>${button("", "loading-skip", "home", 'aria-label="Skip loading"')}</section>`;
 }
 
 function homeView() {
