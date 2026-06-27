@@ -1,10 +1,12 @@
 import { LEVELS } from "./levels.js";
 import { canMove, move, isSolved } from "./game-engine.js";
+import { addCoins, refreshLives, spendLife } from "./economy.js";
 
 const app = document.querySelector("#app");
 const STORAGE = "marble-sort-state-v1";
-const initial = { level: 1, unlocked: 1, coins: 2450, lives: 5, music: true, sound: true, boosters: { undo: 5, shuffle: 3, tube: 2 } };
+const initial = { level: 1, unlocked: 1, coins: 2450, lives: 5, lastLifeAt: null, lastRewardDate: null, music: true, sound: true, boosters: { undo: 5, shuffle: 3, tube: 2 } };
 let profile = { ...initial, ...JSON.parse(localStorage.getItem(STORAGE) || "{}") };
+profile = refreshLives(profile);
 let view = "loading";
 let tubes = [];
 let selected = null;
@@ -17,7 +19,12 @@ function save() { localStorage.setItem(STORAGE, JSON.stringify(profile)); }
 function setView(next) { view = next; modal = null; selected = null; render(); }
 function showToast(message) { toast = message; render(); clearTimeout(transitionTimer); transitionTimer = setTimeout(() => { toast = ""; render(); }, 1700); }
 function levelData() { return LEVELS[Math.min(profile.level, 100) - 1]; }
-function beginLevel() { tubes = structuredClone(levelData().tubes); history = []; selected = null; setView("game"); }
+function beginLevel() {
+  const attempt = spendLife(profile);
+  profile = attempt.profile;
+  if (!attempt.spent) { save(); showToast("No lives left. A new life arrives every 30 minutes."); return; }
+  tubes = structuredClone(levelData().tubes); history = []; selected = null; save(); setView("game");
+}
 
 function button(label, cls, action, attrs = "") {
   return `<button class="${cls}" data-action="${action}" ${attrs}>${label}</button>`;
@@ -27,7 +34,7 @@ function hud(back = false) {
   return `<header class="hud">
     ${button(back ? "‹" : "⚙", "icon-button", back ? "home" : "settings", `aria-label="${back ? "Back" : "Settings"}"`)}
     <div class="pill"><span>❤</span><span>${profile.lives}/5</span></div>
-    <div class="pill"><span class="coin-mini">♛</span><span>${profile.coins.toLocaleString()}</span></div>
+    <div class="pill"><span class="coin-icon" aria-hidden="true"></span><span>${profile.coins.toLocaleString()}</span></div>
   </header>`;
 }
 
@@ -38,10 +45,14 @@ function loadingView() {
 function homeView() {
   return `<section class="screen home">
     <div class="dynamic-level" aria-label="Current level ${profile.level}">${profile.level}</div>
+    <div class="home-life-value" aria-label="${profile.lives} lives">${profile.lives < 5 ? `${profile.lives}/5` : "Full"}</div>
+    <div class="home-coin-value">${profile.coins.toLocaleString()}</div>
     ${button("Settings", "hotspot home-settings", "settings")}
+    ${button("Coins", "hotspot home-coins", "store", 'aria-label="Open coin store"')}
     ${button("Rewards", "hotspot home-rewards", "rewards")}
     ${button("Missions", "hotspot home-missions", "missions")}
     ${button("Play", "hotspot home-play", "play")}
+    ${button("Home", "hotspot home-current", "home")}
     ${button("Store", "hotspot home-store", "store")}
     ${button("Leaderboard", "hotspot home-leaderboard", "leaderboard")}
   </section>`;
@@ -82,7 +93,7 @@ function modalView() {
     const rewards = modal === "rewards";
     return `<div class="modal-backdrop"><div class="modal"><h2>${rewards ? "DAILY REWARDS" : "DAILY MISSIONS"}</h2><img class="modal-art" src="/assets/${rewards ? "rewards" : "missions"}.png" alt=""/><p>${rewards ? "Come back every day for more coins." : "Complete 3 levels and use one booster."}</p><div class="modal-actions">${button(rewards ? "CLAIM 250" : "GOT IT", "action", rewards ? "claim" : "close-modal")}</div></div></div>`;
   }
-  if (modal === "complete") return `<div class="modal-backdrop"><div class="modal"><h2>LEVEL COMPLETE!</h2><div style="font-size:70px">⭐⭐⭐</div><p>COINS EARNED</p><div style="font-size:44px;font-weight:1000;color:#f5a800">♛ 250</div><div class="modal-actions">${button("HOME", "action secondary", "complete-home")}${button("NEXT ›", "action", "next")}</div></div></div>`;
+  if (modal === "complete") return `<div class="modal-backdrop"><div class="modal"><h2>LEVEL COMPLETE!</h2><div style="font-size:70px">⭐⭐⭐</div><p>COINS EARNED</p><div class="earned-coins"><span class="coin-icon"></span><strong>250</strong></div><div class="modal-actions">${button("HOME", "action secondary", "complete-home")}${button("NEXT ›", "action", "next")}</div></div></div>`;
   return "";
 }
 
@@ -101,7 +112,7 @@ function chooseTube(index) {
   history.push(structuredClone(tubes));
   const result = move(tubes, selected, index);
   tubes = result.tubes; selected = null; render();
-  if (isSolved(tubes)) setTimeout(() => { profile.coins += 250; profile.unlocked = Math.min(100, Math.max(profile.unlocked, profile.level + 1)); save(); modal = "complete"; render(); }, 450);
+  if (isSolved(tubes)) setTimeout(() => { profile = addCoins(profile, 250); profile.unlocked = Math.min(100, Math.max(profile.unlocked, profile.level + 1)); save(); modal = "complete"; render(); }, 450);
 }
 
 function shuffle() {
@@ -117,7 +128,11 @@ app.addEventListener("click", event => {
   const target = event.target.closest("[data-action]"); if (!target) return;
   const action = target.dataset.action;
   if (action === "home") setView("home");
-  else if (action === "play") beginLevel();
+  else if (action === "play") {
+    if (target.disabled) return;
+    target.disabled = true; target.classList.add("play-pressed");
+    setTimeout(beginLevel, 190);
+  }
   else if (action === "tube") chooseTube(Number(target.dataset.index));
   else if (action === "store") setView("store");
   else if (action === "leaderboard") setView("leaderboard");
@@ -125,7 +140,11 @@ app.addEventListener("click", event => {
   else if (action === "close-modal") { modal = null; render(); }
   else if (action === "toggle-music") { profile.music = !profile.music; save(); render(); }
   else if (action === "toggle-sound") { profile.sound = !profile.sound; save(); render(); }
-  else if (action === "claim") { profile.coins += 250; save(); modal = null; showToast("250 coins claimed"); }
+  else if (action === "claim") {
+    const today = new Date().toISOString().slice(0, 10);
+    if (profile.lastRewardDate === today) { modal = null; showToast("Today's reward is already claimed"); return; }
+    profile = addCoins(profile, 250); profile.lastRewardDate = today; save(); modal = null; showToast("250 coins claimed");
+  }
   else if (action === "undo") { if (!history.length || !profile.boosters.undo) return showToast("Nothing to undo"); tubes = history.pop(); profile.boosters.undo--; save(); render(); }
   else if (action === "shuffle") shuffle();
   else if (action === "add-tube") { if (!profile.boosters.tube) return showToast("No add-tube boosters left"); tubes.push([]); profile.boosters.tube--; save(); render(); }

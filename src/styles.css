@@ -55,30 +55,47 @@ button:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
   background: #09a9ed url('/assets/home.png') center/cover no-repeat;
 }
 
-.hotspot { position: absolute; border: 0; background: transparent; color: transparent; }
+.hotspot { position: absolute; z-index: 4; border: 0; background: transparent; color: transparent; }
 .hotspot:active { transform: scale(.96); }
-.home-play { left: 19%; width: 62%; top: 55%; height: 14%; }
+.home-play {
+  left: 18.5%; width: 63%; top: 56%; height: 13%; z-index: 6;
+  display: grid; place-items: center; overflow: hidden;
+  border: 4px solid white; border-radius: 45%; color: white;
+  background: linear-gradient(#aaff08 0 46%, #31d800 48%, #12b800 100%);
+  box-shadow: inset 0 5px 2px #e2ff7e, 0 6px 0 #087c00, 0 9px 0 #3ca6ee, 0 13px 22px #00468c99;
+  font-family: "Arial Black", "Trebuchet MS", sans-serif; font-size: clamp(38px, 13vw, 62px);
+  font-weight: 1000; text-shadow: 0 4px 0 #087400, 0 6px 6px #00440088;
+  transition: transform .16s ease, filter .16s ease, box-shadow .16s ease;
+}
+.home-play::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 25%, #fff8 45%, transparent 63%); transform: translateX(-130%); }
+.home-play:active, .home-play.play-pressed { transform: translateY(7px) scale(.96); filter: brightness(1.12); box-shadow: inset 0 5px 8px #149500, 0 3px 0 #087c00, 0 5px 0 #3ca6ee; }
+.home-play.play-pressed::after { animation: play-shine .28s ease; }
+@keyframes play-shine { to { transform: translateX(130%); } }
 .home-settings { left: 0; top: 0; width: 14%; height: 12%; }
+.home-coins { left: 47%; top: 2%; width: 36%; height: 7%; }
 .home-rewards { left: 0; top: 12%; width: 33%; height: 22%; }
 .home-missions { right: 0; top: 12%; width: 33%; height: 22%; }
-.home-store { left: 0; bottom: 0; width: 33%; height: 15%; }
+.home-current { left: 0; bottom: 0; width: 33%; height: 15%; }
+.home-store { left: 33%; bottom: 0; width: 34%; height: 15%; }
 .home-leaderboard { right: 0; bottom: 0; width: 34%; height: 15%; }
 
 .dynamic-level {
-  position: absolute; z-index: 2;
-  left: 50%; top: 29.5%; transform: translateX(-50%);
-  width: 52%; height: 21%; display: grid; place-items: end center;
-  padding-bottom: 10%; overflow: hidden;
-  color: #ffd400; font-size: clamp(72px, 24vw, 112px); font-weight: 1000;
-  background: linear-gradient(145deg, #14b9f6, #0878da 58%, #0648ad);
-  border: 4px solid #8bedff; border-radius: 42px 42px 28px 28px;
-  box-shadow: inset 0 5px #52d8ff, 0 8px 0 #053d91, 0 15px 26px #00377e88;
+  position: absolute; z-index: 3;
+  left: 50%; top: 38%; transform: translateX(-50%);
+  width: 38%; height: 11.5%; display: grid; place-items: center;
+  color: #ffd400; font-family: "Arial Black", "Trebuchet MS", sans-serif;
+  font-size: clamp(72px, 24vw, 112px); font-weight: 1000;
+  background: radial-gradient(circle, #168fe4, #0c7bd5 72%, #0871ca);
+  border: 0; border-radius: 30%; box-shadow: none;
   text-shadow: 0 5px 0 #df7a00, 0 8px 8px #003a91;
 }
-.dynamic-level::before {
-  content: "LEVEL"; position: absolute; top: 8%; left: 0; right: 0; text-align: center;
-  color: white; font-size: clamp(26px, 9vw, 42px); text-shadow: 0 4px #06489f;
+.home-life-value, .home-coin-value {
+  position: absolute; z-index: 5; top: 3.7%; height: 4.2%; display: grid; place-items: center;
+  border-radius: 16px; background: #0755b7; color: white; font-size: clamp(14px, 5vw, 23px);
+  font-family: "Arial Black", "Trebuchet MS", sans-serif; text-shadow: 0 2px #003174;
 }
+.home-life-value { left: 27%; width: 15%; }
+.home-coin-value { left: 60%; width: 15%; }
 
 .hud {
   position: relative; z-index: 5; display: flex; align-items: center; justify-content: space-between;
@@ -97,7 +114,11 @@ button:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
   gap: 8px; padding: 0 14px; font-size: 21px; font-weight: 1000; text-shadow: 0 2px #003277;
   box-shadow: inset 0 3px #32caff, 0 5px 0 #043c91;
 }
-.coin-mini { color: #7a4000; text-shadow: none; width: 30px; aspect-ratio: 1; border-radius: 50%; background: #ffd21b; display: grid; place-items: center; border: 3px solid #ff9a00; }
+.coin-icon {
+  display: inline-block; flex: 0 0 auto; width: 34px; aspect-ratio: 1; border-radius: 50%;
+  background: url('/assets/coin.png') center/245% 245% no-repeat;
+  filter: drop-shadow(0 2px 2px #9b4b00aa);
+}
 
 .gameplay {
   background:
@@ -173,6 +194,8 @@ button:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
 .modal { width: min(100%, 410px); border-radius: 28px; border: 5px solid #42cfff; background: linear-gradient(#fafdff, #d8efff); color: #07448e; box-shadow: 0 10px 0 #033d8f, 0 20px 40px #001342aa; padding: 24px; text-align: center; }
 .modal h2 { margin: 0 0 16px; font-size: 36px; color: #0876d7; text-shadow: 0 2px #fff; }
 .modal p { font-weight: 800; font-size: 18px; }
+.earned-coins { display: flex; align-items: center; justify-content: center; gap: 10px; color: #f5a800; font-size: 44px; }
+.earned-coins .coin-icon { width: 54px; }
 .modal-art { width: min(82%, 280px); max-height: 280px; object-fit: cover; object-position: top; border-radius: 20px; }
 .modal-actions { display: flex; gap: 12px; margin-top: 20px; }
 .action { flex: 1; min-height: 64px; border: 4px solid #fff; border-radius: 22px; color: white; font-size: 24px; font-weight: 1000; text-shadow: 0 3px #126900; background: linear-gradient(var(--lime-1), var(--lime-2)); box-shadow: 0 6px 0 #087f00; }
