@@ -45,13 +45,16 @@ function loadingView() {
 function homeView() {
   return `<section class="screen home">
     <div class="dynamic-level" aria-label="Current level ${profile.level}">${profile.level}</div>
-    <div class="home-life-value" aria-label="${profile.lives} lives">${profile.lives < 5 ? `${profile.lives}/5` : "Full"}</div>
-    <div class="home-coin-value">${profile.coins.toLocaleString()}</div>
+    <div class="home-life-bar" aria-label="${profile.lives} of 5 lives">
+      <span class="heart-counter"><span>${profile.lives}</span></span>
+      <strong>${profile.lives === 5 ? "Full" : `${profile.lives}/5`}</strong>
+      <span class="plus-counter">+</span>
+    </div>
+    ${button(`<span class="coin-icon" aria-hidden="true"></span><strong>${profile.coins.toLocaleString()}</strong><span class="plus-counter">+</span>`, "home-coin-bar", "store", 'aria-label="Open coin store"')}
     ${button("Settings", "hotspot home-settings", "settings")}
-    ${button("Coins", "hotspot home-coins", "store", 'aria-label="Open coin store"')}
     ${button("Rewards", "hotspot home-rewards", "rewards")}
     ${button("Missions", "hotspot home-missions", "missions")}
-    ${button("Play", "hotspot home-play", "play")}
+    ${button("PLAY", "hotspot home-play", "play")}
     ${button("Home", "hotspot home-current", "home")}
     ${button("Store", "hotspot home-store", "store")}
     ${button("Leaderboard", "hotspot home-leaderboard", "leaderboard")}
