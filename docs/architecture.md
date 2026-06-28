@@ -22,6 +22,10 @@ The app exposes 100 level slots. The first gameplay milestone includes hand-tran
 
 ## Art
 
-Provided full-screen compositions are reused for loading and home presentation. Interactive gameplay uses DOM-rendered glass tubes and marble objects so selection, transfer animation and state changes remain functional and testable.
+Provided full-screen compositions are reused for loading and home presentation. The gameplay scene is assembled responsively from the transparent components extracted from the supplied `game scene.svg`: coin HUD, settings button, level holder, glass tube, and the undo, shuffle and add-tube boosters. This prevents the artwork from baking in stale level or economy values and lets the board expand from four to six columns for later levels.
+
+Gameplay marbles remain DOM objects inside the supplied glass-tube art so selection, transfer animation, collision rules and state changes remain functional and testable. The gameplay HUD reads the persisted level and coin balance on every render. Booster quantities use the existing persisted inventory, and the settings artwork opens the existing music/sound panel with a Home action while a level is active.
+
+The current tube vessel is derived from the supplied June 28 tube reference and rendered as a transparent overlay above each marble stack. Tube rows use space-distributed grid tracks, preserving a clear vertical gap between the first and second rows across supported phone aspect ratios.
 
 The home screen uses three complete artwork states instead of stacking feature cards over a shared background: both daily features locked before level 5, Rewards unlocked at levels 5-6, and both Rewards and Missions unlocked from level 7. The live level, lives and coin values remain DOM overlays so they always reflect persisted player state. Locked feature hotspots show an unlock-level toast and do not open their modal.

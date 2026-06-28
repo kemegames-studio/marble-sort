@@ -136,46 +136,75 @@ button:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
 }
 .coin-icon {
   display: inline-block; flex: 0 0 auto; width: 34px; aspect-ratio: 1; border-radius: 50%;
-  background: url('/assets/coin.png') center/245% 245% no-repeat;
+  background: url('/assets/coin.png') center/contain no-repeat;
   filter: drop-shadow(0 2px 2px #9b4b00aa);
 }
 
 .gameplay {
-  background:
-    radial-gradient(circle at 50% 20%, #20d9ff55 0 8%, transparent 32%),
-    linear-gradient(180deg, #0065c7, #079fec 48%, #006ac8 100%);
+  background: #2c5ab6;
+  padding: max(10px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
 }
 .gameplay::before {
-  content: ""; position: absolute; inset: 0; opacity: .18; pointer-events: none;
-  background-image: radial-gradient(circle, #fff 0 1px, transparent 2px);
-  background-size: 34px 34px;
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 50% 30%, #3f78d833, transparent 48%);
 }
-.level-title {
-  margin: 6px auto 2px; width: 54%; min-height: 62px; display: grid; place-items: center;
-  border-radius: 18px; border: 3px solid #61dfff; background: linear-gradient(#159cf1, #0758c2);
-  font-size: clamp(26px, 8vw, 38px); font-weight: 1000; text-shadow: 0 3px #073e91;
-  box-shadow: inset 0 4px #48ceff, 0 6px 0 #03408e;
+.gameplay-hud {
+  position: absolute; z-index: 8; left: max(2.5%, env(safe-area-inset-left)); right: max(2.5%, env(safe-area-inset-right));
+  top: max(7.3%, calc(env(safe-area-inset-top) + 1.5%)); height: 7%;
+  display: flex; align-items: center; justify-content: space-between; pointer-events: none;
 }
-.tube-board {
-  position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center;
-  align-content: center; gap: clamp(10px, 3vw, 18px) 8px; padding: 20px 16px 130px;
-  min-height: calc(100dvh - 190px);
+.gameplay-coins {
+  position: relative; width: 31%; aspect-ratio: 758 / 329; display: grid; place-items: center;
+  pointer-events: none;
 }
-.tube {
-  position: relative; width: clamp(58px, 15vw, 72px); height: clamp(208px, 45vw, 254px);
-  border: 4px solid #c9f5ff; border-top-width: 7px; border-radius: 13px 13px 30px 30px;
-  background: linear-gradient(90deg, #fff4, #1ca8ef22 22%, #006bb244 73%, #fff5);
-  box-shadow: inset 0 0 15px #b8efff99, 0 8px 13px #00367b88;
-  display: flex; flex-direction: column-reverse; align-items: center; padding: 7px 3px 9px;
+.gameplay-coin-bar { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.gameplay-coin { position: absolute; left: -2%; top: 5%; width: 31%; height: 90%; object-fit: contain; }
+.gameplay-coins span {
+  position: relative; z-index: 1; margin-left: 25%; width: 65%; overflow: hidden; text-align: center;
+  color: #fff; font-family: "Arial Black", "Trebuchet MS", sans-serif; font-size: clamp(13px, 2.3dvh, 22px);
+  line-height: 1; text-shadow: 0 3px 0 #073c93;
+}
+.gameplay-settings {
+  width: 13%; aspect-ratio: 1; border: 0; background: transparent; padding: 0; pointer-events: auto;
+  transition: transform .14s ease, filter .14s ease;
+}
+.gameplay-settings img { width: 100%; height: 100%; object-fit: contain; }
+.gameplay-settings:active { transform: translateY(3px) scale(.96); filter: brightness(.9); }
+.gameplay-level {
+  position: absolute; z-index: 5; left: 50%; top: 15.9%; transform: translateX(-50%);
+  width: 47%; aspect-ratio: 612 / 408; display: grid; place-items: center;
+}
+.gameplay-level img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.gameplay-level span {
+  position: relative; z-index: 1; width: 78%; margin-top: -3%; overflow: hidden; text-align: center; white-space: nowrap;
+  color: #fff; font-family: "Arial Black", "Trebuchet MS", sans-serif; font-size: clamp(18px, 3.2dvh, 32px);
+  line-height: 1; text-shadow: 0 3px 0 #0760bc;
+}
+.gameplay-tube-board {
+  position: absolute; z-index: 3; left: 50%; top: 27%; bottom: 22%; transform: translateX(-50%);
+  width: min(91%, 410px); display: grid; grid-template-columns: repeat(var(--tube-columns), minmax(0, 1fr));
+  grid-template-rows: repeat(2, max-content); align-content: space-between; align-items: center; justify-items: center;
+  column-gap: 2.2%;
+}
+.game-tube {
+  position: relative; width: min(100%, 70px); aspect-ratio: 485 / 1195; border: 0; padding: 0;
+  background: transparent; color: transparent;
   transition: transform .18s ease, filter .18s ease;
 }
-.tube::before { content: ""; position: absolute; left: -8px; right: -8px; top: -9px; height: 12px; border: 4px solid #ddfaff; border-radius: 50%; background: #29baf044; }
-.tube.selected { transform: translateY(-13px); filter: drop-shadow(0 0 12px #fff); }
-.tube.valid-target { animation: target-pulse .8s ease infinite alternate; }
+.game-tube::after {
+  content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none;
+  background: url('/assets/game-tube.png') center/contain no-repeat;
+}
+.game-tube-marbles {
+  position: absolute; z-index: 1; left: 26%; right: 26%; bottom: 5%; height: 78%;
+  display: flex; flex-direction: column-reverse; align-items: center; justify-content: flex-start;
+}
+.game-tube.selected { transform: translateY(-7%); filter: drop-shadow(0 0 12px #fff); }
+.game-tube.valid-target { animation: target-pulse .8s ease infinite alternate; }
 @keyframes target-pulse { to { filter: drop-shadow(0 0 13px #a9ff1b); } }
 
 .marble {
-  width: calc(100% - 3px); aspect-ratio: 1; flex: 0 0 auto; border-radius: 50%; position: relative;
+  width: 100%; aspect-ratio: 1; flex: 0 0 auto; border-radius: 50%; position: relative;
   box-shadow: inset -9px -11px 15px #001b6377, inset 7px 7px 10px #ffffffbb, 0 4px 4px #002a6777;
   background-color: var(--marble);
   background-image: radial-gradient(circle at 31% 24%, #fff 0 7%, #fff8 8% 12%, transparent 14%), repeating-conic-gradient(from 35deg, transparent 0 16deg, #ffffff25 17deg 26deg, transparent 27deg 43deg);
@@ -188,17 +217,22 @@ button:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
 .marble.yellow { --marble:#ffd11a; }.marble.purple { --marble:#8e31df; }.marble.pink { --marble:#f45ab1; }
 .marble.orange { --marble:#ff8c18; }.marble.cyan { --marble:#18d4df; }
 
-.boosters {
-  position: absolute; z-index: 6; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%);
-  display: flex; gap: 16px; padding: 12px 18px; border-radius: 26px;
-  background: linear-gradient(#087ad9, #064ea9); border: 3px solid #2bc3ff; box-shadow: 0 5px 0 #033681;
+.gameplay-boosters {
+  position: absolute; z-index: 7; left: 50%; bottom: max(3.8%, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  width: 82%; height: 12.5%; display: flex; align-items: center; justify-content: space-evenly;
+  padding: 0 6%; border: 3px solid #18bfff; border-radius: 32px; background: #126db3;
 }
-.booster {
-  width: 66px; height: 66px; border-radius: 18px; border: 3px solid #ffd34c; color: white;
-  background: linear-gradient(#b84bf6, #6421cb); box-shadow: inset 0 4px #d58aff, 0 4px 0 #42118e;
-  font-size: 30px; font-weight: 900; position: relative;
+.gameplay-booster {
+  position: relative; width: 27%; aspect-ratio: 1; border: 0; padding: 0; background: transparent;
+  transition: transform .14s ease, filter .14s ease;
 }
-.booster small { position: absolute; bottom: -10px; right: -8px; min-width: 26px; padding: 2px 5px; border-radius: 10px; background: #ffcf1a; color: #713500; font-size: 12px; border: 2px solid #fff; }
+.gameplay-booster img { width: 100%; height: 100%; object-fit: contain; }
+.gameplay-booster small {
+  position: absolute; right: 5%; bottom: 5%; min-width: 24px; padding: 2px 6px; border-radius: 12px;
+  border: 2px solid #fff; background: #ffc91a; color: #6b3600; font-size: 12px; font-weight: 1000;
+  box-shadow: 0 2px 0 #9a5c00;
+}
+.gameplay-booster:active { transform: translateY(3px) scale(.96); filter: brightness(.9); }
 
 .panel-screen { background: linear-gradient(#004aa2, #0a94e2 50%, #0360bd); padding: 20px 14px 40px; overflow-y: auto; }
 .panel-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }

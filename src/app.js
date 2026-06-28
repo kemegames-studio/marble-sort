@@ -64,18 +64,29 @@ function homeView() {
 
 function marble(color) { return `<div class="marble ${color}" aria-label="${color} marble"></div>`; }
 function gameView() {
+  const columnCount = tubes.length > 10 ? 6 : tubes.length > 8 ? 5 : Math.min(4, tubes.length);
   const renderedTubes = tubes.map((tube, i) => {
     const valid = selected !== null && canMove(tubes, selected, i);
-    return `<button class="tube ${selected === i ? "selected" : ""} ${valid ? "valid-target" : ""}" data-action="tube" data-index="${i}" aria-label="Tube ${i + 1}, ${tube.length} marbles">${tube.map(marble).join("")}</button>`;
+    return `<button class="game-tube ${selected === i ? "selected" : ""} ${valid ? "valid-target" : ""}" data-action="tube" data-index="${i}" aria-label="Tube ${i + 1}, ${tube.length} marbles"><span class="game-tube-marbles">${tube.map(marble).join("")}</span></button>`;
   }).join("");
   return `<section class="screen gameplay">
-    ${hud(true)}
-    <div class="level-title">LEVEL ${profile.level}</div>
-    <div class="tube-board">${renderedTubes}</div>
-    <nav class="boosters" aria-label="Boosters">
-      ${button(`↶<small>${profile.boosters.undo}</small>`, "booster", "undo", 'aria-label="Undo"')}
-      ${button(`⤨<small>${profile.boosters.shuffle}</small>`, "booster", "shuffle", 'aria-label="Shuffle"')}
-      ${button(`+<small>${profile.boosters.tube}</small>`, "booster", "add-tube", 'aria-label="Add tube"')}
+    <header class="gameplay-hud">
+      <div class="gameplay-coins" aria-label="${profile.coins.toLocaleString()} coins">
+        <img class="gameplay-coin-bar" src="/assets/coin-bar.png" alt="" />
+        <img class="gameplay-coin" src="/assets/coin.png" alt="" />
+        <span>${profile.coins.toLocaleString()}</span>
+      </div>
+      ${button('<img src="/assets/settings.png" alt="" />', "gameplay-settings", "settings", 'aria-label="Settings"')}
+    </header>
+    <div class="gameplay-level" aria-label="Current level ${profile.level}">
+      <img src="/assets/game-level-holder.png" alt="" />
+      <span>Level ${profile.level}</span>
+    </div>
+    <div class="gameplay-tube-board" style="--tube-columns:${columnCount}">${renderedTubes}</div>
+    <nav class="gameplay-boosters" aria-label="Boosters">
+      ${button(`<img src="/assets/booster-undo.png" alt="" /><small>${profile.boosters.undo}</small>`, "gameplay-booster", "undo", 'aria-label="Undo"')}
+      ${button(`<img src="/assets/booster-shuffle.png" alt="" /><small>${profile.boosters.shuffle}</small>`, "gameplay-booster", "shuffle", 'aria-label="Shuffle"')}
+      ${button(`<img src="/assets/booster-add-tube.png" alt="" /><small>${profile.boosters.tube}</small>`, "gameplay-booster", "add-tube", 'aria-label="Add tube"')}
     </nav>
   </section>`;
 }
@@ -91,7 +102,7 @@ function leaderboardView() {
 
 function modalView() {
   if (!modal) return "";
-  if (modal === "settings") return `<div class="modal-backdrop"><div class="modal"><h2>SETTINGS</h2><p>Music ${profile.music ? "On" : "Off"}</p>${button(profile.music ? "TURN OFF" : "TURN ON", "action secondary", "toggle-music")}<p>Sound ${profile.sound ? "On" : "Off"}</p>${button(profile.sound ? "TURN OFF" : "TURN ON", "action secondary", "toggle-sound")}<div class="modal-actions">${button("CLOSE", "action", "close-modal")}</div></div></div>`;
+  if (modal === "settings") return `<div class="modal-backdrop"><div class="modal"><h2>SETTINGS</h2><p>Music ${profile.music ? "On" : "Off"}</p>${button(profile.music ? "TURN OFF" : "TURN ON", "action secondary", "toggle-music")}<p>Sound ${profile.sound ? "On" : "Off"}</p>${button(profile.sound ? "TURN OFF" : "TURN ON", "action secondary", "toggle-sound")}<div class="modal-actions">${view === "game" ? button("HOME", "action secondary", "home") : ""}${button("CLOSE", "action", "close-modal")}</div></div></div>`;
   if (modal === "pause") return `<div class="modal-backdrop"><div class="modal"><h2>PAUSED</h2><div class="modal-actions">${button("HOME", "action secondary", "home")}${button("RESUME", "action", "close-modal")}</div></div></div>`;
   if (modal === "rewards" || modal === "missions") {
     const rewards = modal === "rewards";
