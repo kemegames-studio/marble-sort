@@ -23,3 +23,5 @@ The app exposes 100 level slots. The first gameplay milestone includes hand-tran
 ## Art
 
 Provided full-screen compositions are reused for loading and home presentation. Interactive gameplay uses DOM-rendered glass tubes and marble objects so selection, transfer animation and state changes remain functional and testable.
+
+The home screen uses three complete artwork states instead of stacking feature cards over a shared background: both daily features locked before level 5, Rewards unlocked at levels 5-6, and both Rewards and Missions unlocked from level 7. The live level, lives and coin values remain DOM overlays so they always reflect persisted player state. Locked feature hotspots show an unlock-level toast and do not open their modal.

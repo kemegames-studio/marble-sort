@@ -43,17 +43,18 @@ function loadingView() {
 }
 
 function homeView() {
-  return `<section class="screen home">
+  const rewardsUnlocked = profile.level >= 5;
+  const missionsUnlocked = profile.level >= 7;
+  const featureState = missionsUnlocked ? "features-unlocked" : rewardsUnlocked ? "rewards-unlocked" : "features-locked";
+  return `<section class="screen home ${featureState}">
     <div class="dynamic-level" aria-label="Current level ${profile.level}">${profile.level}</div>
-    <div class="home-life-bar" aria-label="${profile.lives} of 5 lives">
-      <span class="heart-counter"><span>${profile.lives}</span></span>
-      <strong>${profile.lives === 5 ? "Full" : `${profile.lives}/5`}</strong>
-      <span class="plus-counter">+</span>
-    </div>
-    ${button(`<span class="coin-icon" aria-hidden="true"></span><strong>${profile.coins.toLocaleString()}</strong><span class="plus-counter">+</span>`, "home-coin-bar", "store", 'aria-label="Open coin store"')}
+    <div class="home-life-value" aria-label="${profile.lives} of 5 lives">${profile.lives}/5</div>
+    <div class="home-coin-value">${profile.coins.toLocaleString()}</div>
+    ${button("Menu", "hotspot home-menu", "settings")}
     ${button("Settings", "hotspot home-settings", "settings")}
-    ${button("Rewards", "hotspot home-rewards", "rewards")}
-    ${button("Missions", "hotspot home-missions", "missions")}
+    ${button("Coins", "hotspot home-coins", "store", 'aria-label="Open coin store"')}
+    ${button("Rewards", "hotspot home-rewards", rewardsUnlocked ? "rewards" : "locked-rewards", `aria-label="${rewardsUnlocked ? "Open Daily Rewards" : "Daily Rewards unlock at level 5"}"`)}
+    ${button("Missions", "hotspot home-missions", missionsUnlocked ? "missions" : "locked-missions", `aria-label="${missionsUnlocked ? "Open Daily Missions" : "Daily Missions unlock at level 7"}"`)}
     ${button("PLAY", "hotspot home-play", "play")}
     ${button("Home", "hotspot home-current", "home")}
     ${button("Store", "hotspot home-store", "store")}
@@ -139,6 +140,8 @@ app.addEventListener("click", event => {
   else if (action === "tube") chooseTube(Number(target.dataset.index));
   else if (action === "store") setView("store");
   else if (action === "leaderboard") setView("leaderboard");
+  else if (action === "locked-rewards") showToast("Daily Rewards unlock at level 5");
+  else if (action === "locked-missions") showToast("Daily Missions unlock at level 7");
   else if (["settings", "rewards", "missions", "pause"].includes(action)) { modal = action; render(); }
   else if (action === "close-modal") { modal = null; render(); }
   else if (action === "toggle-music") { profile.music = !profile.music; save(); render(); }
