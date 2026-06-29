@@ -4,6 +4,12 @@
 
 The first milestone is a standalone Vite application. This keeps gameplay iteration fast and allows the same build to run locally, in a browser, and inside a later Capacitor Android shell.
 
+## Android packaging
+
+The production Vite bundle is packaged in a Capacitor Android application with package ID `com.kemegames.marblesort` and app name `Marble Sort`. `npm run android:sync` rebuilds `dist` and copies it into the native project. `npm run android:apk` also runs Gradle `assembleDebug`; the resulting installable APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`.
+
+Android builds require JDK 21 and an Android SDK. This workstation uses the SDK at `C:\Users\walee\AppData\Local\Android\Sdk`; the generated native project records that path in its untracked `local.properties` file.
+
 ## Gameplay state
 
 Tube arrays are stored bottom-to-top. Each tube has a capacity of four. A legal move transfers the contiguous run of the source tube's top color into an empty tube or onto the same color, limited by destination capacity.
