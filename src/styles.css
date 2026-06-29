@@ -171,7 +171,7 @@ button:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
 .gameplay-settings img { width: 100%; height: 100%; object-fit: contain; }
 .gameplay-settings:active { transform: translateY(3px) scale(.96); filter: brightness(.9); }
 .gameplay-level {
-  position: absolute; z-index: 5; left: 50%; top: 15.9%; transform: translateX(-50%);
+  position: absolute; z-index: 5; left: 50%; top: 14.5%; transform: translateX(-50%);
   width: 47%; aspect-ratio: 612 / 408; display: grid; place-items: center;
 }
 .gameplay-level img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
@@ -181,22 +181,25 @@ button:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
   line-height: 1; text-shadow: 0 3px 0 #0760bc;
 }
 .gameplay-tube-board {
-  position: absolute; z-index: 3; left: 50%; top: 27%; bottom: 22%; transform: translateX(-50%);
+  position: absolute; z-index: 3; left: 50%; top: 25.5%; bottom: 23%; transform: translateX(-50%);
   width: min(91%, 410px); display: grid; grid-template-columns: repeat(var(--tube-columns), minmax(0, 1fr));
   grid-template-rows: repeat(2, max-content); align-content: space-between; align-items: center; justify-items: center;
   column-gap: 2.2%;
 }
 .game-tube {
-  position: relative; width: min(100%, 70px); aspect-ratio: 485 / 1195; border: 0; padding: 0;
+  position: relative; width: min(100%, 42px); aspect-ratio: 108 / 422; border: 0; padding: 0;
   background: transparent; color: transparent;
   transition: transform .18s ease, filter .18s ease;
 }
 .game-tube::after {
   content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none;
-  background: url('/assets/game-tube.png') center/contain no-repeat;
+  background-image: url('/assets/game-tube.png');
+  background-repeat: no-repeat;
+  background-size: 389% 142%;
+  background-position: center 87.5%;
 }
 .game-tube-marbles {
-  position: absolute; z-index: 1; left: 26%; right: 26%; bottom: 5%; height: 78%;
+  position: absolute; z-index: 3; left: 15%; right: 15%; bottom: 14%; height: 75%;
   display: flex; flex-direction: column-reverse; align-items: center; justify-content: flex-start;
 }
 .game-tube.selected { transform: translateY(-7%); filter: drop-shadow(0 0 12px #fff); }
@@ -216,6 +219,19 @@ button:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
 .marble.red { --marble:#f13228; }.marble.blue { --marble:#157ff3; }.marble.green { --marble:#4bd542; }
 .marble.yellow { --marble:#ffd11a; }.marble.purple { --marble:#8e31df; }.marble.pink { --marble:#f45ab1; }
 .marble.orange { --marble:#ff8c18; }.marble.cyan { --marble:#18d4df; }
+.flying-marble {
+  position: absolute; z-index: 14; margin: 0; pointer-events: none; will-change: transform;
+  transform-origin: center; filter: drop-shadow(0 8px 7px #00245f77);
+}
+.tube-complete-burst {
+  position: absolute; z-index: 8; left: 50%; top: 42%; width: 160%; aspect-ratio: 1;
+  border: 4px solid #fff56a; border-radius: 50%; pointer-events: none;
+  animation: tube-complete-burst .8s ease-out both;
+}
+@keyframes tube-complete-burst {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(.15); box-shadow: 0 0 12px #fff; }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 0 28px #7dff62; }
+}
 
 .gameplay-boosters {
   position: absolute; z-index: 7; left: 50%; bottom: max(3.8%, env(safe-area-inset-bottom)); transform: translateX(-50%);
@@ -263,4 +279,8 @@ button:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
   .tube { width: 56px; height: 210px; }
   .boosters { gap: 10px; }
   .booster { width: 60px; height: 60px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-tube, .marble { animation: none; transition: none; }
 }

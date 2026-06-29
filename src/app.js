@@ -14,9 +14,10 @@ let history = [];
 let modal = null;
 let toast = "";
 let transitionTimer;
+let moveAnimating = false;
 
 function save() { localStorage.setItem(STORAGE, JSON.stringify(profile)); }
-function setView(next) { view = next; modal = null; selected = null; render(); }
+function setView(next) { view = next; modal = null; selected = null; moveAnimating = false; render(); }
 function showToast(message) { toast = message; render(); clearTimeout(transitionTimer); transitionTimer = setTimeout(() => { toast = ""; render(); }, 1700); }
 function levelData() { return LEVELS[Math.min(profile.level, 100) - 1]; }
 function beginLevel() {
@@ -117,7 +118,121 @@ function render() {
   app.innerHTML = `<div class="game-shell">${content}${modalView()}${toast ? `<div class="toast">${toast}</div>` : ""}</div>`;
 }
 
+function celebrateCompletedTube(index) {
+  const tube = app.querySelector(`.game-tube[data-index="${index}"]`);
+  if (!tube) return;
+  const burst = document.createElement("span");
+  burst.className = "tube-complete-burst";
+  tube.append(burst);
+  tube.animate([
+    { transform: "translateY(0) scale(1)", filter: "brightness(1) drop-shadow(0 0 0 transparent)" },
+    { transform: "translateY(-5%) scale(1.08)", filter: "brightness(1.3) drop-shadow(0 0 18px #fff56a)", offset: 0.4 },
+    { transform: "translateY(0) scale(1)", filter: "brightness(1) drop-shadow(0 0 8px #7dff62)", offset: 1 }
+  ], { duration: 760, easing: "cubic-bezier(.2,.9,.3,1)" });
+  [...tube.querySelectorAll(".marble")].forEach((marbleNode, marbleIndex) => {
+    marbleNode.animate([
+      { transform: "scale(1)" },
+      { transform: "scale(1.18)", offset: 0.45 },
+      { transform: "scale(1)" }
+    ], { duration: 520, delay: marbleIndex * 65, easing: "ease-in-out" });
+  });
+  setTimeout(() => burst.remove(), 850);
+}
+
+function finishMove(result, destination) {
+  tubes = result.tubes;
+  selected = null;
+  moveAnimating = false;
+  render();
+  const completed = tubes[destination]?.length === 4 && tubes[destination].every(color => color === tubes[destination][0]);
+  if (completed) celebrateCompletedTube(destination);
+  if (isSolved(tubes)) setTimeout(() => {
+    profile = addCoins(profile, 250);
+    profile.unlocked = Math.min(100, Math.max(profile.unlocked, profile.level + 1));
+    save();
+    modal = "complete";
+    render();
+  }, 450);
+}
+
+async function animateTransfer(from, to, result) {
+  const scene = app.querySelector(".gameplay");
+  const source = app.querySelector(`.game-tube[data-index="${from}"]`);
+  const target = app.querySelector(`.game-tube[data-index="${to}"]`);
+  const sourceMarbles = source?.querySelectorAll(".marble");
+  const targetStack = target?.querySelector(".game-tube-marbles");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (!scene || !source || !target || !sourceMarbles?.length || !targetStack || reduceMotion) {
+    finishMove(result, to);
+    return;
+  }
+
+  const sceneRect = scene.getBoundingClientRect();
+  const targetRect = targetStack.getBoundingClientRect();
+  const sourceRect = source.getBoundingClientRect();
+  const destinationRect = target.getBoundingClientRect();
+  const moving = [...sourceMarbles].slice(-result.moved).reverse();
+  const targetCount = tubes[to].length;
+  const direction = targetRect.left < sourceRect.left ? -1 : 1;
+  const flights = moving.map((marbleNode, arrivalSlot) => {
+    const start = marbleNode.getBoundingClientRect();
+    const size = start.width;
+    const exitLeft = sourceRect.left + (sourceRect.width - size) / 2;
+    const exitTop = sourceRect.top - (size * 0.82);
+    const entryLeft = destinationRect.left + (destinationRect.width - size) / 2;
+    const entryTop = destinationRect.top - (size * 0.82);
+    const endLeft = targetRect.left + (targetRect.width - size) / 2;
+    const endTop = targetRect.bottom - ((targetCount + arrivalSlot + 1) * size);
+    const apexLeft = (exitLeft + entryLeft) / 2;
+    const apexTop = Math.min(exitTop, entryTop) - Math.max(34, size * 1.2);
+    const point = (left, top) => `translate3d(${left - start.left}px, ${top - start.top}px, 0)`;
+    const clone = marbleNode.cloneNode(true);
+
+    marbleNode.style.visibility = "hidden";
+    clone.classList.add("flying-marble");
+    Object.assign(clone.style, {
+      left: `${start.left - sceneRect.left}px`,
+      top: `${start.top - sceneRect.top}px`,
+      width: `${size}px`,
+      height: `${size}px`,
+      animation: "none"
+    });
+    scene.append(clone);
+
+    const animation = clone.animate([
+      { transform: "translate3d(0, 0, 0) scale(1) rotate(0deg)", offset: 0 },
+      { transform: `${point(exitLeft, exitTop)} scale(1.06) rotate(${direction * 5}deg)`, offset: 0.24 },
+      { transform: `${point(apexLeft, apexTop)} scale(1.12) rotate(${direction * 13}deg)`, offset: 0.5 },
+      { transform: `${point(entryLeft, entryTop)} scale(1.05) rotate(0deg)`, offset: 0.76 },
+      { transform: `${point(endLeft, endTop)} scale(1) rotate(0deg)`, offset: 1 }
+    ], {
+      duration: 640,
+      delay: arrivalSlot * 105,
+      easing: "cubic-bezier(.2,.78,.24,1)",
+      fill: "forwards"
+    });
+    return { clone, animation };
+  });
+
+  source.animate([
+    { transform: "translateY(-7%) rotate(0deg)" },
+    { transform: `translateY(-13%) rotate(${direction * 10}deg)`, offset: 0.42 },
+    { transform: "translateY(-7%) rotate(0deg)" }
+  ], { duration: 560 + ((result.moved - 1) * 105), easing: "ease-in-out" });
+  target.animate([
+    { transform: "translateY(0) scale(1)" },
+    { transform: "translateY(3%) scale(1.035)", offset: 0.78 },
+    { transform: "translateY(0) scale(1)" }
+  ], { duration: 600, easing: "cubic-bezier(.2,.8,.3,1)" });
+
+  await Promise.all(flights.map(({ animation }) => animation.finished.catch(() => undefined)));
+  flights.forEach(({ clone }) => clone.remove());
+  finishMove(result, to);
+}
+
 function chooseTube(index) {
+  if (moveAnimating) return;
   if (selected === null) {
     if (!tubes[index].length) return;
     selected = index; render(); return;
@@ -125,9 +240,10 @@ function chooseTube(index) {
   if (selected === index) { selected = null; render(); return; }
   if (!canMove(tubes, selected, index)) { selected = tubes[index].length ? index : null; showToast("That marble cannot go there"); return; }
   history.push(structuredClone(tubes));
-  const result = move(tubes, selected, index);
-  tubes = result.tubes; selected = null; render();
-  if (isSolved(tubes)) setTimeout(() => { profile = addCoins(profile, 250); profile.unlocked = Math.min(100, Math.max(profile.unlocked, profile.level + 1)); save(); modal = "complete"; render(); }, 450);
+  const from = selected;
+  const result = move(tubes, from, index);
+  moveAnimating = true;
+  animateTransfer(from, index, result);
 }
 
 function shuffle() {
@@ -142,6 +258,7 @@ function shuffle() {
 app.addEventListener("click", event => {
   const target = event.target.closest("[data-action]"); if (!target) return;
   const action = target.dataset.action;
+  if (moveAnimating && ["tube", "undo", "shuffle", "add-tube"].includes(action)) return;
   if (action === "home") setView("home");
   else if (action === "play") {
     if (target.disabled) return;
