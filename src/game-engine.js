@@ -8,10 +8,15 @@ export function topRun(tube) {
   return run;
 }
 
+export function isTubeComplete(tube) {
+  return Boolean(tube?.length === CAPACITY && tube.every(value => value === tube[0]));
+}
+
 export function canMove(tubes, from, to) {
   if (from === to || !tubes[from]?.length || !tubes[to]) return false;
   const source = tubes[from];
   const target = tubes[to];
+  if (isTubeComplete(source)) return false;
   if (target.length >= CAPACITY) return false;
   return !target.length || target[target.length - 1] === source[source.length - 1];
 }
@@ -25,6 +30,15 @@ export function move(tubes, from, to) {
   return { tubes: next, moved: amount };
 }
 
+export function hasAnyMoves(tubes) {
+  for (let from = 0; from < tubes.length; from += 1) {
+    for (let to = 0; to < tubes.length; to += 1) {
+      if (canMove(tubes, from, to)) return true;
+    }
+  }
+  return false;
+}
+
 export function isSolved(tubes) {
-  return tubes.every(tube => !tube.length || (tube.length === CAPACITY && tube.every(v => v === tube[0])));
+  return tubes.every(tube => !tube.length || isTubeComplete(tube));
 }

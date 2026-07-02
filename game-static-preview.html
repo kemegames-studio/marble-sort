@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Gameplay Preview</title>
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+  <main id="app"></main>
+  <script>
+    const tubes = [
+      ["purple", "purple", "purple"],
+      ["purple"],
+      ["yellow"],
+      ["red", "red", "red", "red"],
+      ["yellow", "yellow", "yellow"],
+    ];
+
+    function tubeLayoutStyle(index, columnCount, totalTubes) {
+      const overlapRatio = 349 / 632;
+      const widthPercent = 97 / (1 + (overlapRatio * Math.max(columnCount - 1, 0)));
+      const stepPercent = widthPercent * overlapRatio;
+      const row = Math.floor(index / columnCount);
+      const rowCount = row === 0 ? Math.min(columnCount, totalTubes) : Math.max(0, totalTubes - columnCount);
+      const indexInRow = row === 0 ? index : index - columnCount;
+      const rowTop = row === 0 ? 24.2 : 54.5;
+      const rowSpan = widthPercent + (stepPercent * Math.max(rowCount - 1, 0));
+      const leftStart = (100 - rowSpan) / 2;
+      const left = leftStart + (stepPercent * indexInRow);
+      return `--tube-width:${widthPercent.toFixed(3)}%;--tube-left:${left.toFixed(3)}%;--tube-top:${rowTop.toFixed(3)}%;`;
+    }
+
+    const assetForColor = {
+      red: "/assets/ball-red.svg",
+      yellow: "/assets/ball-yellow.svg",
+      purple: "/assets/ball-plum.svg",
+    };
+
+    const app = document.querySelector("#app");
+    const columnCount = 4;
+    const marble = color => `<span class="marble ${color}"><img class="marble-art" src="${assetForColor[color]}" alt=""></span>`;
+    const renderedTubes = tubes.map((tube, i) => {
+      const complete = i === 3;
+      return `<button class="game-tube ${complete ? "complete" : ""}" style="${tubeLayoutStyle(i, columnCount, tubes.length)}"><span class="game-tube-marbles">${tube.map(marble).join("")}</span>${complete ? '<span class="game-tube-complete-cap"></span>' : ""}</button>`;
+    }).join("");
+
+    app.innerHTML = `<div class="game-shell"><section class="screen gameplay">
+      <header class="gameplay-hud">
+        <div class="gameplay-coins" aria-label="2950 coins">
+          <img class="gameplay-coin-bar" src="/assets/coin-bar.png" alt="" />
+          <img class="gameplay-coin" src="/assets/coin.png" alt="" />
+          <span>2,950</span>
+        </div>
+        <button class="gameplay-settings" aria-label="Settings"><img src="/assets/settings.png" alt="" /></button>
+      </header>
+      <div class="gameplay-level" aria-label="Current level 3">
+        <img src="/assets/game-level-holder.png" alt="" />
+        <span class="gameplay-level-value">LEVEL 3</span>
+      </div>
+      <div class="gameplay-tube-board">${renderedTubes}</div>
+      <nav class="gameplay-boosters" aria-label="Boosters">
+        <button class="gameplay-booster"><img src="/assets/booster-undo.png" alt="" /><small>5</small></button>
+        <button class="gameplay-booster"><img src="/assets/booster-shuffle.png" alt="" /><small>3</small></button>
+        <button class="gameplay-booster"><img src="/assets/booster-add-tube.png" alt="" /><small>2</small></button>
+      </nav>
+    </section></div>`;
+  </script>
+</body>
+</html>

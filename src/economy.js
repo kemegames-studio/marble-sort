@@ -27,6 +27,14 @@ export function spendLife(profile, now = Date.now()) {
   return { profile: next, spent: true };
 }
 
+export function loseLife(profile, now = Date.now()) {
+  const next = refreshLives(profile, now);
+  if (next.lives <= 0) return next;
+  next.lives -= 1;
+  if (!next.lastLifeAt) next.lastLifeAt = now;
+  return next;
+}
+
 export function addCoins(profile, amount) {
   return { ...profile, coins: Math.max(0, profile.coins + amount) };
 }
