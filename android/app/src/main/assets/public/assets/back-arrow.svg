@@ -1,0 +1,24 @@
+<svg width="180" height="140" viewBox="0 0 180 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bArrow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5fc3ff"/>
+      <stop offset="0.5" stop-color="#2b9bff"/>
+      <stop offset="1" stop-color="#0d6ae8"/>
+    </linearGradient>
+  </defs>
+  <!-- arrow: head left, curved tail right -->
+  <path d="M58 20 L18 62 L58 104 L58 82
+           C96 80 118 84 126 108
+           C132 74 120 56 78 54 L78 34 Z"
+        fill="#0a4bc4"/>
+  <path d="M56 24 L20 62 L56 100 L56 80
+           C96 78 118 84 124 106
+           C129 74 118 58 76 56 L76 38 Z"
+        fill="url(#bArrow)" stroke="#8fd2ff" stroke-width="3" stroke-linejoin="round"/>
+  <!-- gloss -->
+  <path d="M50 36 L30 60 L50 84 L50 74 C82 72 104 76 112 92 C110 70 98 66 66 66 L66 48 Z"
+        fill="#ffffff" opacity="0.28"/>
+  <circle cx="44" cy="50" r="4" fill="#ffffff" opacity="0.85"/>
+  <!-- sparkle -->
+  <path d="M64 12 L67 20 L75 23 L67 26 L64 34 L61 26 L53 23 L61 20 Z" fill="#fff9c7" opacity="0.9"/>
+</svg>

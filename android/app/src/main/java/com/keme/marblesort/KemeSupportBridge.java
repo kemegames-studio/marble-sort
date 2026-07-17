@@ -1,4 +1,4 @@
-package com.kemegames.marblesort;
+package com.keme.marblesort;
 
 import android.app.Activity;
 import android.content.Context;

@@ -9,3 +9,19 @@ vite-*.err.log
 .DS_Store
 *.log
 .tmp/
+
+# Local UI verification output
+.qa-chrome-*/
+qa-v*-ui/
+qa-marble-sort-v7/
+qa-*.png
+
+# Local Android bundle inspection/extraction output
+android/.*-apk/
+android/.verify-*/
+android/.compare-*/
+android/.from-*/
+android/.v*-apk/
+
+# Downloaded release tooling; install locally when needed
+tools/*.jar

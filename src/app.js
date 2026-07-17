@@ -1,7 +1,8 @@
 import { LEVELS } from "./levels.js";
 import { canMove, hasAnyMoves, isTubeComplete, move, isSolved } from "./game-engine.js";
-import { addCoins, loseLife, refreshLives } from "./economy.js";
+import { addCoins, loseLife, refreshLives, MAX_LIVES } from "./economy.js";
 import { pauseMusic, playSfx, preloadMusic, preloadSfx, stopSfx, syncMusic } from "./audio.js";
+import { showInterstitialAd, showRewardedCoinsAd, showRewardedLivesAd } from "./ads.js";
 import {
   createPortalTicket,
   getNativeSupportStatus,
@@ -18,6 +19,7 @@ const STORAGE = "marble-sort-state-v1";
 const STATE_VERSION = 2;
 const WIN_REWARD_COINS = 40;
 const COMPLETE_BONUS_COINS = 80;
+const REWARDED_LIVES_AMOUNT = 2;
 const DEFAULT_COINS = 500;
 const DAILY_REWARD_COINS = 250;
 const MARBLE_ASSETS = {
@@ -32,7 +34,7 @@ const MARBLE_ASSETS = {
   purple: "/assets/ball-plum.svg",
   pink: "/assets/ball-red.svg",
 };
-const initial = { version: STATE_VERSION, level: 1, unlocked: 1, coins: DEFAULT_COINS, lives: 5, lastLifeAt: null, lastRewardDate: null, music: true, sound: true, boosters: { undo: 5, shuffle: 3, tube: 2 } };
+const initial = { version: STATE_VERSION, level: 1, unlocked: 1, coins: DEFAULT_COINS, lives: 5, lastLifeAt: null, lastRewardDate: null, music: true, sound: true, boosters: { undo: 5, shuffle: 3, tube: 2 }, tutorials: { level1: false } };
 
 function loadProfile() {
   const raw = JSON.parse(localStorage.getItem(STORAGE) || "{}");
@@ -42,6 +44,10 @@ function loadProfile() {
     boosters: {
       ...initial.boosters,
       ...(raw.boosters || {}),
+    },
+    tutorials: {
+      ...initial.tutorials,
+      ...(raw.tutorials || {}),
     },
   };
 
@@ -123,6 +129,21 @@ function button(label, cls, action, attrs = "") {
   return `<button class="${cls}" data-action="${action}" ${attrs}>${label}</button>`;
 }
 
+async function showOptionalAd(showAd) {
+  try {
+    return await showAd();
+  } catch {
+    return false;
+  }
+}
+
+function goToNextLevel() {
+  playSound("levelStart", { volume: 0.76, rate: 1.03 });
+  profile.level = Math.min(100, profile.level + 1);
+  save();
+  beginLevel();
+}
+
 function tubeLayoutStyle(index, columnCount, totalTubes) {
   const overlapRatio = 349 / 632;
   const widthPercent = 97 / (1 + (overlapRatio * Math.max(columnCount - 1, 0)));
@@ -174,12 +195,23 @@ function marble(color) {
   const src = MARBLE_ASSETS[color] || MARBLE_ASSETS.blue;
   return `<span class="marble ${color}" aria-label="${color} marble"><img class="marble-art" src="${src}" alt="" /></span>`;
 }
+
+function levelOneTutorialActive() {
+  return view === "game" && profile.level === 1 && (profile.unlocked || 1) <= 1 && !profile.tutorials?.level1 && tubes.length >= 2 && !isSolved(tubes);
+}
+
+function levelOneTutorialStep() {
+  return levelOneTutorialActive() ? selected === 1 ? 2 : 1 : 0;
+}
+
 function gameView() {
   const columnCount = tubes.length <= 3 ? tubes.length : tubes.length === 5 ? 5 : tubes.length <= 8 ? 4 : tubes.length <= 10 ? 5 : 6;
+  const tutorialStep = levelOneTutorialStep();
   const renderedTubes = tubes.map((tube, i) => {
     const complete = isTubeComplete(tube);
     const valid = selected !== null && canMove(tubes, selected, i);
-    return `<button class="game-tube ${complete ? "complete" : ""} ${selected === i ? "selected" : ""} ${valid ? "valid-target" : ""}" style="${tubeLayoutStyle(i, columnCount, tubes.length)}" data-action="tube" data-index="${i}" aria-label="Tube ${i + 1}, ${complete ? "completed and sealed" : `${tube.length} marbles`}"><span class="game-tube-marbles">${tube.map(marble).join("")}</span>${complete ? `<span class="game-tube-complete-cap" aria-hidden="true"></span>` : ""}</button>`;
+    const tutorialTarget = (tutorialStep === 1 && i === 1) || (tutorialStep === 2 && i === 0);
+    return `<button class="game-tube ${complete ? "complete" : ""} ${selected === i ? "selected" : ""} ${valid ? "valid-target" : ""} ${tutorialTarget ? "tutorial-target" : ""}" style="${tubeLayoutStyle(i, columnCount, tubes.length)}" data-action="tube" data-index="${i}" aria-label="Tube ${i + 1}, ${complete ? "completed and sealed" : `${tube.length} marbles`}"><span class="game-tube-marbles">${tube.map(marble).join("")}</span>${complete ? `<span class="game-tube-complete-cap" aria-hidden="true"></span>` : ""}${tutorialTarget ? `<img class="tutorial-hand tutorial-hand-step-${tutorialStep}" src="/assets/tutorial-hand.png" alt="" aria-hidden="true" />` : ""}</button>`;
   }).join("");
   return `<section class="screen gameplay">
     <header class="gameplay-hud">
@@ -453,7 +485,7 @@ function modalView() {
     const rewards = modal === "rewards";
     return `<div class="modal-backdrop"><div class="modal"><h2>${rewards ? "DAILY REWARDS" : "DAILY MISSIONS"}</h2><img class="modal-art" src="/assets/${rewards ? "rewards" : "missions"}.png" alt=""/><p>${rewards ? "Come back every day for more coins." : "Complete 3 levels and use one booster."}</p><div class="modal-actions">${button(rewards ? `CLAIM ${DAILY_REWARD_COINS}` : "GOT IT", "action", rewards ? "claim" : "close-modal")}</div></div></div>`;
   }
-  if (modal === "failed") return `<div class="modal-backdrop"><div class="modal"><h2>NO MOVES LEFT!</h2><div style="font-size:68px">💔</div><p>You lost 1 life. Try the level again or go back home.</p><div class="modal-actions">${button("HOME", "action secondary", "failed-home")}${button("RETRY", "action", "retry")}</div></div></div>`;
+  if (modal === "failed") return `<div class="modal-backdrop"><div class="modal"><h2>NO MOVES LEFT!</h2><div style="font-size:68px">💔</div><p>You lost 1 life. Try the level again or go back home.</p><div class="modal-actions">${button("HOME", "action secondary", "failed-home")}${button(`WATCH AD +${REWARDED_LIVES_AMOUNT} LIVES`, "action secondary", "rewarded-lives")}${button("RETRY", "action", "retry")}</div></div></div>`;
   if (modal === "complete") return `<div class="modal-backdrop"><div class="modal"><h2>LEVEL COMPLETE!</h2><div style="font-size:70px">⭐⭐⭐</div><p>COINS EARNED</p><div class="earned-coins"><span class="coin-icon"></span><strong>${WIN_REWARD_COINS}</strong></div><div class="modal-actions">${button("HOME", "action secondary", "complete-home")}${button("NEXT ›", "action", "next")}</div></div></div>`;
   if (modal === "support") {
     const config = getKemeSupportConfig();
@@ -604,6 +636,7 @@ function finishMove(result, destination) {
     setTimeout(() => playSound("reward", { volume: 0.56, rate: 1.04 }), 190);
     profile = addCoins(profile, WIN_REWARD_COINS);
     profile.unlocked = Math.min(100, Math.max(profile.unlocked, profile.level + 1));
+    if (profile.level === 1) profile.tutorials = { ...profile.tutorials, level1: true };
     completeBonusClaimed = false;
     save();
     modal = "complete";
@@ -716,6 +749,11 @@ async function animateTransfer(from, to, result) {
 
 function chooseTube(index) {
   if (moveAnimating) return;
+  const tutorialStep = levelOneTutorialStep();
+  if ((tutorialStep === 1 && index !== 1) || (tutorialStep === 2 && index !== 0)) {
+    playSound("invalid", { volume: 0.45 });
+    return;
+  }
   if (selected === null) {
     if (!tubes[index].length || isTubeComplete(tubes[index])) return;
     playSound("tubeSelect", { volume: 0.54, rate: 1.02 });
@@ -779,11 +817,11 @@ app.addEventListener("pointercancel", event => {
   target.classList.remove("play-pressed");
 });
 
-app.addEventListener("click", event => {
+app.addEventListener("click", async event => {
   const target = event.target.closest("[data-action]"); if (!target) return;
   const action = target.dataset.action;
   if (moveAnimating && ["tube", "undo", "shuffle", "add-tube"].includes(action)) return;
-  if (["home", "store", "leaderboard", "settings", "rewards", "missions", "pause", "close-modal", "support", "support-refresh", "support-native", "support-submit", "locked-rewards", "locked-missions", "failed-home", "complete-home", "complete-reward", "complete-bonus"].includes(action)) {
+  if (["home", "store", "leaderboard", "settings", "rewards", "missions", "pause", "close-modal", "support", "support-refresh", "support-native", "support-submit", "locked-rewards", "locked-missions", "failed-home", "complete-home", "complete-reward", "complete-bonus", "rewarded-lives", "next"].includes(action)) {
     playSound("uiTap", { volume: 0.58 });
   }
   if (action === "home") setView("home");
@@ -837,12 +875,39 @@ app.addEventListener("click", event => {
   }
   else if (action === "complete-bonus") {
     if (completeBonusClaimed) { playSound("invalid", { volume: 0.5 }); showToast("Bonus already claimed"); return; }
+    target.disabled = true;
+    showToast("Loading reward ad...");
+    const earned = await showOptionalAd(showRewardedCoinsAd);
+    if (!earned) {
+      target.disabled = false;
+      playSound("invalid", { volume: 0.5 });
+      showToast("Ad unavailable. Try again soon.");
+      return;
+    }
     playSound("reward", { volume: 0.82, rate: 1.06 });
     profile = addCoins(profile, COMPLETE_BONUS_COINS);
     completeBonusClaimed = true;
     save();
     render();
     showToast(`${COMPLETE_BONUS_COINS} bonus coins added`);
+  }
+  else if (action === "rewarded-lives") {
+    target.disabled = true;
+    showToast("Loading reward ad...");
+    const earned = await showOptionalAd(showRewardedLivesAd);
+    if (!earned) {
+      target.disabled = false;
+      playSound("invalid", { volume: 0.5 });
+      showToast("Ad unavailable. Try again soon.");
+      return;
+    }
+    playSound("reward", { volume: 0.82, rate: 1.06 });
+    profile = refreshLives(profile);
+    profile.lives = Math.min(MAX_LIVES, profile.lives + REWARDED_LIVES_AMOUNT);
+    if (profile.lives >= MAX_LIVES) profile.lastLifeAt = null;
+    save();
+    render();
+    showToast(`${REWARDED_LIVES_AMOUNT} lives added`);
   }
   else if (action === "undo") {
     if (!history.length || !profile.boosters.undo) { playSound("invalid", { volume: 0.55 }); return showToast("Nothing to undo"); }
@@ -857,7 +922,11 @@ app.addEventListener("click", event => {
   }
   else if (action === "failed-home") setView("home");
   else if (action === "retry") { playSound("levelStart", { volume: 0.74, rate: 1.02 }); beginLevel(); }
-  else if (action === "next") { playSound("levelStart", { volume: 0.76, rate: 1.03 }); profile.level = Math.min(100, profile.level + 1); save(); beginLevel(); }
+  else if (action === "next") {
+    target.disabled = true;
+    await showOptionalAd(showInterstitialAd);
+    goToNextLevel();
+  }
   else if (action === "complete-home") { profile.level = Math.min(100, Math.max(profile.level + 1, profile.unlocked)); save(); setView("home"); }
 });
 

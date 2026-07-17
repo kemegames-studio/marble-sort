@@ -1,4 +1,4 @@
-package com.kemegames.marblesort;
+package com.keme.marblesort;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;

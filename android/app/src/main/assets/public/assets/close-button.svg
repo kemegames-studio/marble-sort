@@ -1,0 +1,41 @@
+<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="face" cx="0.38" cy="0.3" r="0.95">
+      <stop offset="0" stop-color="#ff8d80"/>
+      <stop offset="0.4" stop-color="#f2493c"/>
+      <stop offset="0.78" stop-color="#dd2a1e"/>
+      <stop offset="1" stop-color="#c01a12"/>
+    </radialGradient>
+    <linearGradient id="xShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f3e3e0"/>
+    </linearGradient>
+  </defs>
+  <!-- lower rim (button depth) -->
+  <circle cx="80" cy="86" r="68" fill="#8f130f"/>
+  <circle cx="80" cy="83" r="68" fill="#a81712"/>
+  <!-- face -->
+  <circle cx="80" cy="76" r="68" fill="url(#face)"/>
+  <circle cx="80" cy="76" r="68" fill="none" stroke="#9e150f" stroke-width="3"/>
+  <!-- inner pressed ring -->
+  <circle cx="80" cy="76" r="55" fill="none" stroke="#c2241c" stroke-width="3" opacity="0.75"/>
+  <circle cx="80" cy="77.5" r="55" fill="none" stroke="#ff9d92" stroke-width="1.6" opacity="0.5"/>
+  <!-- gloss -->
+  <path d="M28 52 Q46 18 84 14 Q64 12 46 24 Q30 35 28 52Z" fill="#ffd9d3" opacity="0.85"/>
+  <!-- sparkle -->
+  <path d="M42 30 L45 38 L53 41 L45 44 L42 52 L39 44 L31 41 L39 38 Z" fill="#ffffff" opacity="0.95"/>
+  <!-- X emboss shadow -->
+  <g transform="rotate(45 80 78)" opacity="0.5">
+    <rect x="65" y="35" width="30" height="94" rx="14" fill="#a81712"/>
+    <rect x="33" y="67" width="94" height="30" rx="14" fill="#a81712"/>
+  </g>
+  <!-- X -->
+  <g transform="rotate(45 80 76)">
+    <rect x="65" y="29" width="30" height="94" rx="14" fill="url(#xShade)"/>
+    <rect x="33" y="61" width="94" height="30" rx="14" fill="url(#xShade)"/>
+  </g>
+  <!-- X top highlight -->
+  <g transform="rotate(45 80 76)" opacity="0.65">
+    <rect x="69" y="33" width="22" height="10" rx="5" fill="#ffffff"/>
+  </g>
+</svg>

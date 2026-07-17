@@ -53,9 +53,10 @@ captures/
 .idea/navEditor.xml
 
 # Keystore files
-# Uncomment the following lines if you do not want to check your keystore files in.
-#*.jks
-#*.keystore
+*.jks
+*.keystore
+keystore.properties
+keystore.properties.*
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild
@@ -92,8 +93,8 @@ lint/tmp/
 # Cordova plugins for Capacitor
 capacitor-cordova-android-plugins
 
-# Copied web assets
-app/src/main/assets/public
+# The versioned Android web snapshot is intentionally tracked. It is the
+# canonical Play release payload until the readable source tree is reconciled.
 
 # Generated Config files
 app/src/main/assets/capacitor.config.json

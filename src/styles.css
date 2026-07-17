@@ -64,8 +64,8 @@ button:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
   --feature-card-height: 12.5%;
   background: #09a9ed url('/assets/home-screen-refined.png') center/100% 100% no-repeat;
 }
-.home.rewards-unlocked { background-image: url('/assets/home-screen-refined.png'); }
-.home.features-unlocked { background-image: url('/assets/home-screen-refined.png'); }
+.home.rewards-unlocked { background-image: url('/assets/home-screen-rewards-unlocked-compact.png'); }
+.home.features-unlocked { background-image: url('/assets/home-screen-features-unlocked-compact.png'); }
 
 .hotspot { position: absolute; z-index: 4; border: 0; background: transparent; color: transparent; }
 .hotspot:active { transform: scale(.96); }
@@ -282,6 +282,34 @@ button:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
 .game-tube:active { transform: translateY(-2%) scale(.992); filter: brightness(1.05) drop-shadow(0 6px 14px #001a4766); }
 .game-tube.valid-target { animation: target-pulse .8s ease infinite alternate; }
 @keyframes target-pulse { to { filter: drop-shadow(0 0 13px #a9ff1b); } }
+.tutorial-hand {
+  position: absolute;
+  z-index: 10;
+  left: 43%;
+  top: -5%;
+  width: 46%;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  --tutorial-hand-rot: -14deg;
+  filter: drop-shadow(0 10px 10px #001b4a99);
+  animation: tutorial-hand-tap .82s cubic-bezier(.2, .78, .28, 1) infinite;
+  transform-origin: 16% 72%;
+}
+.tutorial-hand-step-1, .tutorial-hand-step-2 { left: 43%; top: -5%; }
+.game-tube.tutorial-target {
+  animation: tutorial-tube-glow .82s ease-in-out infinite alternate;
+  z-index: 6;
+}
+@keyframes tutorial-hand-tap {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(var(--tutorial-hand-rot)) scale(1); }
+  50% { transform: translate3d(-5%, 5%, 0) rotate(var(--tutorial-hand-rot)) scale(.92); }
+}
+@keyframes tutorial-tube-glow {
+  from { filter: drop-shadow(0 0 12px #ffffffcc) drop-shadow(0 6px 12px #001a4770); }
+  to { filter: drop-shadow(0 0 24px #fff36a) drop-shadow(0 8px 16px #001a4770); }
+}
 
 .marble {
   width: 84%; aspect-ratio: 1; flex: 0 0 auto; position: relative; display: block;
@@ -573,7 +601,7 @@ button:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
   0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 10px 0 rgba(192, 96, 0, 0.28)) drop-shadow(0 0 20px rgba(255, 233, 109, 0.52)); }
   50% { transform: translateY(-5%) scale(1.02); filter: drop-shadow(0 12px 0 rgba(192, 96, 0, 0.32)) drop-shadow(0 0 30px rgba(255, 245, 159, 0.72)); }
 }
-.toast { position: absolute; z-index: 30; left: 50%; bottom: 112px; transform: translateX(-50%); background: #052c70ee; border: 3px solid #6de1ff; border-radius: 18px; padding: 12px 18px; font-weight: 900; white-space: nowrap; animation: toast 1.8s ease both; }
+.toast { position: absolute; z-index: 30; left: 50%; bottom: 112px; max-width: calc(100% - 28px); transform: translateX(-50%); background: #052c70ee; border: 3px solid #6de1ff; border-radius: 18px; padding: 12px 18px; font-weight: 900; line-height: 1.25; text-align: center; white-space: normal; animation: toast 1.8s ease both; }
 @keyframes toast { 0%,100%{opacity:0; transform:translate(-50%,10px)} 15%,80%{opacity:1; transform:translate(-50%,0)} }
 
 @media (max-width: 390px) {

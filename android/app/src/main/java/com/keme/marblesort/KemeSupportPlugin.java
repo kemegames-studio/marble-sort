@@ -1,4 +1,4 @@
-package com.kemegames.marblesort;
+package com.keme.marblesort;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;

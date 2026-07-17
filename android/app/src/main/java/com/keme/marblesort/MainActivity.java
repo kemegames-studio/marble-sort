@@ -1,4 +1,4 @@
-package com.kemegames.marblesort;
+package com.keme.marblesort;
 
 import android.os.Bundle;
 
@@ -12,6 +12,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(KemeSupportPlugin.class);
+        registerPlugin(MarbleAdsPlugin.class);
         super.onCreate(savedInstanceState);
         enableImmersiveMode();
     }

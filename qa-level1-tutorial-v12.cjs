@@ -1,0 +1,117 @@
+const fs = require('fs');
+const path = require('path');
+const http = require('http');
+
+const publicDir = path.resolve('marble-sort/android/app/src/main/assets/public');
+const out = path.resolve('marble-sort/qa-v12-level1-tutorial.png');
+const mime = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg' };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const server = http.createServer((req, res) => {
+  let p = new URL(req.url, 'http://x').pathname;
+  if (p === '/') p = '/index.html';
+  const f = path.resolve(publicDir, `.${decodeURIComponent(p)}`);
+  if (!f.startsWith(publicDir) || !fs.existsSync(f)) {
+    res.writeHead(404);
+    res.end('not found');
+    return;
+  }
+  res.writeHead(200, { 'content-type': mime[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-store' });
+  fs.createReadStream(f).pipe(res);
+});
+
+async function ensureChrome() {
+  try {
+    await fetch('http://127.0.0.1:9333/json/version');
+    return;
+  } catch {}
+  const { spawn } = require('child_process');
+  const cands = [
+    `${process.env.ProgramFiles}\\Google\\Chrome\\Application\\chrome.exe`,
+    `${process.env['ProgramFiles(x86)']}\\Google\\Chrome\\Application\\chrome.exe`,
+    `${process.env.ProgramFiles}\\Microsoft\\Edge\\Application\\msedge.exe`,
+  ];
+  const exe = cands.find(fs.existsSync);
+  if (!exe) throw Error('No Chrome/Edge found');
+  spawn(exe, ['--headless=new', '--remote-debugging-port=9333', '--disable-gpu', '--no-first-run', '--no-default-browser-check', 'about:blank'], { detached: true, stdio: 'ignore' }).unref();
+  await sleep(1500);
+}
+
+async function page() {
+  const r = await fetch('http://127.0.0.1:9333/json/new?about:blank', { method: 'PUT' });
+  const t = await r.json();
+  const ws = new WebSocket(t.webSocketDebuggerUrl);
+  await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
+  let id = 0;
+  const pending = new Map();
+  ws.onmessage = (e) => {
+    const m = JSON.parse(e.data);
+    if (m.id && pending.has(m.id)) {
+      const { res, rej } = pending.get(m.id);
+      pending.delete(m.id);
+      m.error ? rej(Error(JSON.stringify(m.error))) : res(m.result || {});
+    }
+  };
+  const send = (method, params = {}) => new Promise((res, rej) => {
+    pending.set(++id, { res, rej });
+    ws.send(JSON.stringify({ id, method, params }));
+  });
+  return { send, close: () => ws.close() };
+}
+
+async function evalJS(pg, expression) {
+  const r = await pg.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
+  if (r.exceptionDetails) throw Error(JSON.stringify(r.exceptionDetails));
+  return r.result.value;
+}
+
+async function wait(pg, expr) {
+  for (let i = 0; i < 100; i++) {
+    if (await evalJS(pg, `Boolean(${expr})`).catch(() => false)) return;
+    await sleep(100);
+  }
+  throw Error(`timeout ${expr}`);
+}
+
+server.listen(5188, '127.0.0.1', async () => {
+  try {
+    await ensureChrome();
+    const pg = await page();
+    await pg.send('Page.enable');
+    await pg.send('Runtime.enable');
+    await pg.send('Emulation.setDeviceMetricsOverride', { width: 360, height: 800, deviceScaleFactor: 2, mobile: true });
+    const state = { version: 2, level: 1, unlocked: 1, coins: 500, lives: 5, launched: true, onboarded: true, music: false, sound: false, vibration: false, boosters: { undo: 0, shuffle: 0, tube: 0 }, boosterSeen: {}, tutorials: { level1: false } };
+    await pg.send('Page.addScriptToEvaluateOnNewDocument', { source: `localStorage.setItem('marble-sort-state-v1', ${JSON.stringify(JSON.stringify(state))});` });
+    await pg.send('Page.navigate', { url: 'http://127.0.0.1:5188/index.html' });
+    await wait(pg, `document.querySelector('.home')`);
+    await evalJS(pg, `document.querySelector('[data-action="play"]').click()`);
+    await wait(pg, `document.querySelector('.gameplay .tutorial-hand-step-1') && document.querySelector('.game-tube.tutorial-target[data-index="0"]')`);
+    await sleep(250);
+    const shot = await pg.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+    fs.writeFileSync(out, Buffer.from(shot.data, 'base64'));
+
+    await evalJS(pg, `document.querySelector('.game-tube[data-index="1"]').click()`);
+    await sleep(150);
+    const wrongBlocked = await evalJS(pg, `!document.querySelector('.game-tube.selected') && !!document.querySelector('.tutorial-hand-step-1')`);
+
+    await evalJS(pg, `document.querySelector('.game-tube[data-index="0"]').click()`);
+    await wait(pg, `document.querySelector('.game-tube.selected[data-index="0"]') && document.querySelector('.tutorial-hand-step-2') && document.querySelector('.game-tube.tutorial-target[data-index="1"]')`);
+
+    await evalJS(pg, `document.querySelector('.game-tube[data-index="0"]').click()`);
+    await sleep(150);
+    const deselectBlocked = await evalJS(pg, `!!document.querySelector('.game-tube.selected[data-index="0"]') && !!document.querySelector('.tutorial-hand-step-2')`);
+
+    await evalJS(pg, `document.querySelector('.game-tube[data-index="1"]').click()`);
+    await wait(pg, `document.querySelector('.winpop') || document.querySelector('.modal')`);
+    const saved = await evalJS(pg, `JSON.parse(localStorage.getItem('marble-sort-state-v1'))`);
+    const report = { wrongBlocked, deselectBlocked, tutorialDone: saved.tutorials?.level1 === true, unlocked: saved.unlocked, level: saved.level };
+    console.log(JSON.stringify(report, null, 2));
+    if (!wrongBlocked || !deselectBlocked || !report.tutorialDone || saved.unlocked < 2) throw Error(`Tutorial QA failed: ${JSON.stringify(report)}`);
+    pg.close();
+  } catch (e) {
+    console.error(e);
+    process.exitCode = 1;
+  } finally {
+    server.close();
+  }
+});

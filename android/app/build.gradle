@@ -1,5 +1,26 @@
 apply plugin: 'com.android.application'
 
+def releaseSigningProperties = new Properties()
+def releaseSigningPropertiesFile = rootProject.file('keystore.properties')
+if (releaseSigningPropertiesFile.exists()) {
+    releaseSigningPropertiesFile.withInputStream { releaseSigningProperties.load(it) }
+}
+
+def releaseSigningProperty = { name ->
+    def value = project.findProperty(name) ?: System.getenv(name) ?: releaseSigningProperties.getProperty(name)
+    return value != null ? value.toString() : null
+}
+
+def releaseStoreFile = releaseSigningProperty('RELEASE_STORE_FILE')
+def releaseStorePassword = releaseSigningProperty('RELEASE_STORE_PASSWORD')
+def releaseKeyAlias = releaseSigningProperty('RELEASE_KEY_ALIAS')
+def releaseKeyPassword = releaseSigningProperty('RELEASE_KEY_PASSWORD')
+def hasReleaseSigningConfig = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+
+if (!hasReleaseSigningConfig && gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }) {
+    throw new GradleException('Release signing is required. Configure RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, and RELEASE_KEY_PASSWORD in android/keystore.properties, Gradle properties, or environment variables.')
+}
+
 def kemeSdkKey = (project.findProperty("KEME_SDK_KEY") ?: System.getenv("KEME_SDK_KEY") ?: "").toString()
 def kemeOrgId = (project.findProperty("KEME_ORG_ID") ?: System.getenv("KEME_ORG_ID") ?: "").toString()
 def kemeEnvironment = (project.findProperty("KEME_ENVIRONMENT") ?: System.getenv("KEME_ENVIRONMENT") ?: "production").toString()
@@ -11,7 +32,7 @@ def quoteBuildConfig = { value ->
 }
 
 android {
-    namespace = "com.kemegames.marblesort"
+    namespace = "com.keme.marblesort"
     compileSdk = rootProject.ext.compileSdkVersion
 
     buildFeatures {
@@ -19,10 +40,10 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.kemegames.marblesort"
+        applicationId "com.keme.marblesort"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode 22
         versionName "1.0"
         buildConfigField "String", "KEME_SDK_KEY", quoteBuildConfig(kemeSdkKey)
         buildConfigField "String", "KEME_ORG_ID", quoteBuildConfig(kemeOrgId)
@@ -34,8 +55,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+
+    signingConfigs {
+        if (hasReleaseSigningConfig) {
+            release {
+                storeFile rootProject.file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasReleaseSigningConfig) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -53,6 +89,7 @@ dependencies {
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation "com.google.android.gms:play-services-ads:23.6.0"
     implementation "com.google.firebase:firebase-messaging:23.4.0"
     if (localKemeAar.exists()) {
         implementation files(localKemeAar)

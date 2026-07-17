@@ -1,0 +1,56 @@
+<svg width="768" height="512" viewBox="0 0 768 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gTop" x1="90" y1="90" x2="700" y2="250" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e8f7ff"/>
+      <stop offset="0.5" stop-color="#a9e0fb"/>
+      <stop offset="1" stop-color="#7cc7f2"/>
+    </linearGradient>
+    <linearGradient id="gSide" x1="40" y1="170" x2="728" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8ccdf2"/>
+      <stop offset="0.35" stop-color="#bfe8fc"/>
+      <stop offset="0.65" stop-color="#8fd0f4"/>
+      <stop offset="1" stop-color="#6bb8ea"/>
+    </linearGradient>
+    <linearGradient id="gLip" x1="70" y1="380" x2="698" y2="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#79c0ee"/>
+      <stop offset="0.5" stop-color="#a9e0fb"/>
+      <stop offset="1" stop-color="#6bb5e8"/>
+    </linearGradient>
+    <radialGradient id="gTopSheen" cx="0.4" cy="0.32" r="0.7">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.7"/>
+      <stop offset="0.5" stop-color="#eaffff" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#eaffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- lower lip ring -->
+  <path d="M96 356 L96 386 Q96 462 384 462 Q672 462 672 386 L672 356 Z" fill="url(#gLip)"/>
+  <ellipse cx="384" cy="384" rx="288" ry="76" fill="none" stroke="#4aa6e6" stroke-opacity="0.6" stroke-width="4"/>
+  <ellipse cx="384" cy="378" rx="284" ry="72" fill="none" stroke="#ffffff" stroke-opacity="0.6" stroke-width="2"/>
+
+  <!-- groove -->
+  <path d="M88 336 L88 356 Q88 428 384 428 Q680 428 680 356 L680 336 Z" fill="#5fa8db"/>
+
+  <!-- main drum side wall -->
+  <path d="M54 168 L54 296 Q54 400 384 400 Q714 400 714 296 L714 168 Z" fill="url(#gSide)"/>
+  <!-- vertical rim highlights (glass edges) -->
+  <path d="M60 176 Q52 300 70 388" stroke="#ffffff" stroke-opacity="0.75" stroke-width="6" fill="none"/>
+  <path d="M708 176 Q716 300 698 388" stroke="#ffffff" stroke-opacity="0.6" stroke-width="6" fill="none"/>
+  <path d="M120 180 Q112 300 128 384" stroke="#ffffff" stroke-opacity="0.45" stroke-width="10" fill="none"/>
+  <path d="M646 180 Q654 300 636 384" stroke="#5aaae0" stroke-opacity="0.5" stroke-width="8" fill="none"/>
+
+  <!-- rim bevel (outer top edge) -->
+  <ellipse cx="384" cy="168" rx="330" ry="102" fill="#9bd8f7"/>
+  <ellipse cx="384" cy="168" rx="330" ry="102" fill="none" stroke="#ffffff" stroke-opacity="0.85" stroke-width="5"/>
+  <ellipse cx="384" cy="164" rx="326" ry="100" fill="none" stroke="#d6f2ff" stroke-opacity="0.6" stroke-width="2"/>
+
+  <!-- recessed inner top surface -->
+  <ellipse cx="384" cy="172" rx="296" ry="89" fill="#7cc5f0"/>
+  <ellipse cx="384" cy="176" rx="288" ry="84" fill="url(#gTop)"/>
+  <ellipse cx="384" cy="176" rx="288" ry="84" fill="url(#gTopSheen)"/>
+  <ellipse cx="384" cy="174" rx="290" ry="85" fill="none" stroke="#5aaae0" stroke-opacity="0.55" stroke-width="3"/>
+  <!-- glossy arc highlight on inner top -->
+  <path d="M170 140 Q300 96 430 100 Q520 103 580 118" stroke="#ffffff" stroke-opacity="0.8" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <!-- bright spark on rim -->
+  <path d="M150 118 L155 132 L169 137 L155 142 L150 156 L145 142 L131 137 L145 132 Z" fill="#ffffff" opacity="0.95"/>
+</svg>
