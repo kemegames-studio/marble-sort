@@ -671,53 +671,72 @@ async function animateTransfer(from, to, result) {
   const moving = [...sourceMarbles].slice(-result.moved).reverse();
   const targetCount = tubes[to].length;
   const direction = targetRect.left < sourceRect.left ? -1 : 1;
-  const moveDuration = 760 + ((result.moved - 1) * 120);
+  const moveDuration = 440 + Math.min(75, (result.moved - 1) * 25);
   const previousSourceOrigin = source.style.transformOrigin;
   const previousTargetOrigin = target.style.transformOrigin;
+  const previousSourceZIndex = source.style.zIndex;
+  const previousTargetZIndex = target.style.zIndex;
   source.style.transformOrigin = direction > 0 ? "18% 88%" : "82% 88%";
   target.style.transformOrigin = direction > 0 ? "76% 88%" : "24% 88%";
+  source.style.zIndex = "6";
+  target.style.zIndex = "5";
   playSound("marbleMove", { volume: Math.min(0.7, 0.5 + (result.moved * 0.06)), rate: 0.96 + (result.moved * 0.04) });
-  const flights = moving.map((marbleNode, arrivalSlot) => {
-    const start = marbleNode.getBoundingClientRect();
-    const size = start.width;
-    const exitLeft = sourceRect.left + (sourceRect.width - size) / 2;
-    const exitTop = sourceRect.top - (size * 1.08);
-    const entryLeft = destinationRect.left + (destinationRect.width - size) / 2;
-    const entryTop = destinationRect.top - (size * 1.02);
-    const endLeft = targetRect.left + (targetRect.width - size) / 2;
-    const endTop = targetRect.bottom - ((targetCount + arrivalSlot + 1) * size);
-    const apexLeft = ((exitLeft + entryLeft) / 2) + (direction * Math.max(8, size * 0.08));
-    const apexTop = Math.min(exitTop, entryTop) - Math.max(46, size * 1.55);
-    const settleTop = endTop - Math.max(6, size * 0.14);
-    const point = (left, top) => `translate3d(${left - start.left}px, ${top - start.top}px, 0)`;
-    const clone = marbleNode.cloneNode(true);
+  const starts = moving.map((marbleNode) => marbleNode.getBoundingClientRect());
+  const size = starts[0].width;
+  const groupLeft = Math.min(...starts.map(({ left }) => left));
+  const groupTop = Math.min(...starts.map(({ top }) => top));
+  const groupRight = Math.max(...starts.map(({ right }) => right));
+  const groupBottom = Math.max(...starts.map(({ bottom }) => bottom));
+  const groupWidth = groupRight - groupLeft;
+  const groupHeight = groupBottom - groupTop;
+  const exitLeft = sourceRect.left + (sourceRect.width - groupWidth) / 2 + (direction * sourceRect.width * 0.13);
+  const exitTop = sourceRect.top - (groupHeight * 0.82);
+  const entryLeft = destinationRect.left + (destinationRect.width - groupWidth) / 2;
+  const entryTop = destinationRect.top - (groupHeight * 0.76);
+  const endLeft = targetRect.left + (targetRect.width - groupWidth) / 2;
+  const endTop = targetRect.bottom - ((targetCount + result.moved) * size);
+  const apexLeft = ((exitLeft + entryLeft) / 2) + (direction * Math.max(8, size * 0.08));
+  const apexTop = Math.min(exitTop, entryTop) - Math.max(40, size * 1.35);
+  const settleTop = endTop - Math.max(5, size * 0.12);
+  const point = (left, top) => `translate3d(${left - groupLeft}px, ${top - groupTop}px, 0)`;
+  const flightGroup = document.createElement("div");
+  const fragment = document.createDocumentFragment();
 
+  flightGroup.className = "flying-marble-group";
+  flightGroup.setAttribute("aria-hidden", "true");
+  Object.assign(flightGroup.style, {
+    left: `${groupLeft - sceneRect.left}px`,
+    top: `${groupTop - sceneRect.top}px`,
+    width: `${groupWidth}px`,
+    height: `${groupHeight}px`
+  });
+  moving.forEach((marbleNode, index) => {
+    const start = starts[index];
+    const clone = marbleNode.cloneNode(true);
     marbleNode.style.visibility = "hidden";
     clone.classList.add("flying-marble");
     Object.assign(clone.style, {
-      left: `${start.left - sceneRect.left}px`,
-      top: `${start.top - sceneRect.top}px`,
-      width: `${size}px`,
-      height: `${size}px`,
+      left: `${start.left - groupLeft}px`,
+      top: `${start.top - groupTop}px`,
+      width: `${start.width}px`,
+      height: `${start.height}px`,
       animation: "none"
     });
-    scene.append(clone);
-
-    const animation = clone.animate([
-      { transform: "translate3d(0, 0, 0) scale(1) rotate(0deg)", offset: 0 },
-      { transform: `${point(exitLeft, exitTop)} scale(1.08, .96) rotate(${direction * 7}deg)`, offset: 0.18 },
-      { transform: `${point(apexLeft, apexTop)} scale(1.12) rotate(${direction * 15}deg)`, offset: 0.48 },
-      { transform: `${point(entryLeft, entryTop)} scale(.98, 1.04) rotate(${direction * 3}deg)`, offset: 0.76 },
-      { transform: `${point(endLeft, settleTop)} scale(1.02, .97) rotate(0deg)`, offset: 0.9 },
-      { transform: `${point(endLeft, endTop)} scale(1) rotate(0deg)`, offset: 1 }
-    ], {
-      duration: moveDuration,
-      delay: arrivalSlot * 118,
-      easing: "cubic-bezier(.2,.78,.24,1)",
-      fill: "forwards"
-    });
-    return { clone, animation };
+    fragment.append(clone);
   });
+  flightGroup.append(fragment);
+  scene.append(flightGroup);
+
+  const flight = flightGroup.animate([
+    { transform: "translate3d(0, 0, 0) scale(1) rotate(0deg)", easing: "cubic-bezier(.3,.65,.4,1)", offset: 0 },
+    { transform: `${point(exitLeft, exitTop)} scale(1.04, .97) rotate(${direction * 7}deg)`, easing: "cubic-bezier(.34,.55,.45,1)", offset: 0.2 },
+    { transform: `${point(apexLeft, apexTop)} scale(1.07) rotate(${direction * 13}deg)`, easing: "cubic-bezier(.5,.04,.76,.42)", offset: 0.48 },
+    { transform: `${point(entryLeft, entryTop)} scale(.99, 1.04) rotate(${direction * 4}deg)`, easing: "cubic-bezier(.55,.06,.72,.44)", offset: 0.68 },
+    { transform: `${point(endLeft, endTop)} scale(1.1, .9) rotate(0deg)`, easing: "cubic-bezier(.2,.9,.32,1)", offset: 0.84 },
+    { transform: `${point(endLeft, settleTop)} scale(.97, 1.04) rotate(0deg)`, easing: "ease-out", offset: 0.93 },
+    { transform: `${point(endLeft, endTop)} scale(1) rotate(0deg)`, offset: 1 }
+  ], { duration: moveDuration, fill: "forwards" });
+  setTimeout(() => playSound("marbleMove", { volume: 0.28, rate: 1.34 }), moveDuration * 0.82);
 
   source.animate([
     { transform: "translateY(-7%) translateX(0) rotate(0deg) scale(1)", offset: 0 },
@@ -725,25 +744,28 @@ async function animateTransfer(from, to, result) {
     { transform: `translateY(-22%) translateX(${direction * 4.5}%) rotate(${direction * 13}deg) scale(1.04)`, offset: 0.56 },
     { transform: `translateY(-12%) translateX(${direction * 1.6}%) rotate(${direction * 4}deg) scale(1.01)`, offset: 0.84 },
     { transform: "translateY(0) translateX(0) rotate(0deg) scale(1)", offset: 1 }
-  ], { duration: moveDuration + 120, easing: "cubic-bezier(.22,.8,.28,1)" });
+  ], { duration: moveDuration + 70, easing: "cubic-bezier(.22,.8,.28,1)" });
   target.animate([
     { transform: "translateY(0) translateX(0) rotate(0deg) scale(1)", offset: 0 },
     { transform: "translateY(0) translateX(0) rotate(0deg) scale(1)", offset: 0.58 },
     { transform: `translateY(5%) translateX(${direction * 1.4}%) rotate(${direction * 3.5}deg) scale(1.03)`, offset: 0.84 },
     { transform: `translateY(-2%) translateX(${direction * .4}%) rotate(${direction * -1.2}deg) scale(1.015)`, offset: 0.94 },
     { transform: "translateY(0) translateX(0) rotate(0deg) scale(1)", offset: 1 }
-  ], { duration: moveDuration + 120, easing: "cubic-bezier(.2,.82,.24,1)" });
+  ], { duration: moveDuration + 70, easing: "cubic-bezier(.2,.82,.24,1)" });
   targetStack.animate([
     { transform: "translateY(0)", offset: 0 },
     { transform: "translateY(0)", offset: 0.72 },
     { transform: "translateY(1.8%)", offset: 0.86 },
     { transform: "translateY(0)", offset: 1 }
-  ], { duration: moveDuration + 90, easing: "ease-out" });
+  ], { duration: moveDuration + 50, easing: "ease-out" });
 
-  await Promise.all(flights.map(({ animation }) => animation.finished.catch(() => undefined)));
-  flights.forEach(({ clone }) => clone.remove());
+  await flight.finished.catch(() => undefined);
+  flightGroup.remove();
+  moving.forEach((marbleNode) => { marbleNode.style.visibility = ""; });
   source.style.transformOrigin = previousSourceOrigin;
   target.style.transformOrigin = previousTargetOrigin;
+  source.style.zIndex = previousSourceZIndex;
+  target.style.zIndex = previousTargetZIndex;
   finishMove(result, to);
 }
 

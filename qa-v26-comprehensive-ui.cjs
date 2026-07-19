@@ -1,11 +1,11 @@
-const fs = require("fs");
+﻿const fs = require("fs");
 const path = require("path");
 const http = require("http");
 const { spawn } = require("child_process");
 
 const root = __dirname;
 const publicDir = path.join(root, "android/app/src/main/assets/public");
-const outputDir = path.join(root, "qa-v25-ui");
+const outputDir = path.join(root, "qa-v26-regression");
 const port = 5194;
 const chromePort = 9336;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -144,7 +144,7 @@ async function audit(page, label, rootSelector = ".game-shell") {
   const result = await evaluate(page, `(() => {
     const root = document.querySelector(${JSON.stringify(rootSelector)});
     const text = root ? root.innerText : "";
-    const mojibake = /[\u00c2\u00c3\u00e2\u00f0]|ï¿½/.test(text);
+    const mojibake = /[\u00c2\u00c3\u00e2\u00f0]|Ã¯Â¿Â½/.test(text);
     const viewport = { width: innerWidth, height: innerHeight };
     const allowVerticalOverflow = root?.matches(".st-screen, .menu-popup-v2");
     const offenders = [...document.querySelectorAll("button, [role=dialog], .liveops-modal, .menu-popup-v2")]
@@ -208,7 +208,7 @@ server.listen(port, "127.0.0.1", async () => {
     report.interactions.menuUsesInfoIcons = await evaluate(page, "document.querySelectorAll('.menu-info-glyph').length === 3 && ![...document.querySelectorAll('.menu-link')].some((button) => button.textContent.includes('?'))");
     report.interactions.menuIdMiddleTruncated = await evaluate(page, "/^KMG-.+\\.\\.\\..{4}$/.test(document.querySelector('.menu-id').textContent.trim())");
     report.interactions.menuSecondaryTapTargets = await evaluate(page, "[...document.querySelectorAll('.menu-edit,.menu-copy')].every((button) => { const rect = button.getBoundingClientRect(); return rect.width >= 44 && rect.height >= 44; })");
-    report.interactions.menuVersionMatchesBuild = await evaluate(page, "document.querySelector('.menu-version').textContent.trim() === '0.1.0 (25)'");
+    report.interactions.menuVersionMatchesBuild = await evaluate(page, "document.querySelector('.menu-version').textContent.trim() === '0.1.0 (26)'");
     await click(page, '.menu-avatar-choice[data-avatar="5"]');
     report.interactions.avatarFirstTap = await evaluate(page, "document.querySelector('.menu-avatar-choice[data-avatar=\"5\"]').classList.contains('is-selected')");
     await click(page, '.menu-popup-v2 [data-action="close-modal"]');

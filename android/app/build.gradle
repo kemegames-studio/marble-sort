@@ -43,7 +43,7 @@ android {
         applicationId "com.keme.marblesort"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 22
+        versionCode 26
         versionName "1.0"
         buildConfigField "String", "KEME_SDK_KEY", quoteBuildConfig(kemeSdkKey)
         buildConfigField "String", "KEME_ORG_ID", quoteBuildConfig(kemeOrgId)

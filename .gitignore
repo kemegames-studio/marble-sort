@@ -13,6 +13,7 @@ vite-*.err.log
 # Local UI verification output
 .qa-chrome-*/
 qa-v*-ui/
+qa-v*-regression/
 qa-marble-sort-v7/
 qa-*.png
 

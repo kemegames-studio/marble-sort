@@ -4,14 +4,19 @@
 
 Marble Sort now exposes a `CUSTOMER SUPPORT` entry inside the settings modal. The support flow is implemented in the web layer so it works in the Vite browser build and inside the Capacitor Android shell.
 
-The in-game support modal:
+The version 26 in-game support center:
 
-- shows the local Player Game ID used for Keme portal login
-- connects to Keme's player portal API when `portalBaseUrl` is configured
-- loads active games from Keme and lets the player pick the routing target
-- submits tickets with category, priority, subject, and description
-- shows the five most recent tickets for the connected player
-- keeps a native Android bridge hook available if a future APK adds a `Capacitor.Plugins.KemeSupport` implementation
+- signs the local installation into Keme with the persistent Player Game ID
+- routes support to the configured Marble Sort game
+- loads real ticket history in pages of 10 with refresh, retry, and load-more controls
+- opens a ticket to show its complete chronological player/support conversation
+- allows replies while a ticket is Open or Replied
+- keeps Closed and Resolved conversations available as read-only history
+- creates tickets with a validated category, subject, and description form
+- shows honest loading, empty, success, and failure states without sample ticket data
+- keeps `support@kemegames.com` available as the email fallback
+
+The enhancement lives in `public/assets/support-center-v26.js` and is mirrored into the versioned Android web payload. It intercepts the existing Support action during event capture, leaving the recovered v25 gameplay bundle unchanged.
 
 ## Runtime config
 
