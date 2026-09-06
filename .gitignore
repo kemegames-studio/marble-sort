@@ -9,3 +9,7 @@ vite-*.err.log
 .DS_Store
 *.log
 .tmp/
+
+# Firebase app config — contains project API keys; this repository is public.
+# Keep it out of source control and supply it at build time.
+android/app/google-services.json

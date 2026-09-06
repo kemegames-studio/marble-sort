@@ -4,4 +4,11 @@
     <string name="title_activity_main">Marble Sort</string>
     <string name="package_name">com.kemegames.marblesort</string>
     <string name="custom_url_scheme">com.kemegames.marblesort</string>
+    <string name="admob_app_id">ca-app-pub-3469899798338883~3277243485</string>
+    <string name="admob_rewarded_coins_ad_unit_id">ca-app-pub-3469899798338883/9734840626</string>
+    <string name="admob_interstitial_ad_unit_id">ca-app-pub-3469899798338883/6338521097</string>
+    <string name="admob_rewarded_lives_ad_unit_id">ca-app-pub-3469899798338883/2253760255</string>
+    <string name="admob_rewarded_extra_tube_ad_unit_id">ca-app-pub-3469899798338883/1081554479</string>
+    <string name="admob_rewarded_undo_ad_unit_id">ca-app-pub-3469899798338883/7438089583</string>
+    <string name="admob_rewarded_shuffle_ad_unit_id">ca-app-pub-3469899798338883/9273915439</string>
 </resources>

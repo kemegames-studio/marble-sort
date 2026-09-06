@@ -1,0 +1,11 @@
+specVersion: "v1"
+serviceId: "marble-sort"
+location: "us-central1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "marblesort"
+      cloudSql:
+        instanceId: "marble-sort-fdc"
+connectorDirs: ["./connector"]

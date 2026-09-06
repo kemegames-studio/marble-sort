@@ -1,5 +1,5 @@
 const SFX_SOURCES = Object.freeze({
-  uiTap: "/assets/sfx/ui-tap.wav",
+  uiTap: "/assets/sfx/ui-tap.mp3",
   tubeSelect: "/assets/sfx/tube-select.wav",
   invalid: "/assets/sfx/invalid.wav",
   marbleMove: "/assets/sfx/marble-move.wav",
@@ -9,15 +9,26 @@ const SFX_SOURCES = Object.freeze({
   levelComplete: "/assets/sfx/level-complete.wav",
   lose: "/assets/sfx/lose.wav",
   levelStart: "/assets/sfx/level-start.wav",
+  coinCollect: "/assets/sfx/coin-collect.mp3",
+  lidClose: "/assets/sfx/lid-close.mp3",
 });
 
-const MUSIC_SOURCE = "/assets/music/background-loop.wav";
+const MUSIC_SOURCE = "/assets/music/background-loop.mp3";
 const baseAudio = new Map();
 const activeAudio = new Set();
 let musicAudio = null;
 
+// Background music plays continuously during gameplay (no per-SFX ducking).
+// It is only stopped on level complete (see musicSuppressed in app.js).
+let musicBaseVolume = 0.32;
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function applyMusicVolume() {
+  if (!musicAudio) return;
+  musicAudio.volume = clamp(musicBaseVolume, 0, 1);
 }
 
 function getBaseAudio(key) {
@@ -36,7 +47,7 @@ function getMusicAudio() {
     musicAudio.loop = true;
     musicAudio.preload = "auto";
     musicAudio.playsInline = true;
-    musicAudio.volume = 0.32;
+    musicAudio.volume = musicBaseVolume;
     musicAudio.load();
   }
   return musicAudio;
@@ -79,7 +90,8 @@ export function playSfx(enabled, key, { volume = 0.72, rate = 1 } = {}) {
 
 export function syncMusic(enabled, { volume = 0.32, restart = false } = {}) {
   const audio = getMusicAudio();
-  audio.volume = clamp(volume, 0, 1);
+  musicBaseVolume = clamp(volume, 0, 1);
+  applyMusicVolume();
 
   if (!enabled) {
     audio.pause();

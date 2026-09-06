@@ -1,0 +1,70 @@
+# Marble Sort — Data Connect (PostgreSQL) schema.
+# Each type becomes a SQL table. Deploy with `firebase deploy --only dataconnect`
+# once billing + the Cloud SQL instance (marble-sort-fdc) exist.
+
+"One row per device/player, keyed by the persistent gameUid."
+type Player @table(key: "gameUid") {
+  gameUid: String!
+  playerName: String!
+  avatar: Int!
+  level: Int!
+  unlocked: Int!
+  coins: Int!
+  lives: Int!
+  league: String
+  onboarded: Boolean!
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp!
+}
+
+"Every level attempt, for funnel and difficulty analytics."
+type GameSession @table {
+  id: UUID! @default(expr: "uuidV4()")
+  player: Player!
+  level: Int!
+  attempt: Int!
+  outcome: String!        # "win" | "fail" | "abandon"
+  seconds: Float
+  boosterFree: Boolean!
+  startedAt: Timestamp!
+  endedAt: Timestamp
+}
+
+"Weekly leaderboard snapshot rows (season = ISO week key, e.g. 2026-W27)."
+type LeaderboardEntry @table {
+  id: UUID! @default(expr: "uuidV4()")
+  player: Player!
+  season: String!
+  league: String!
+  weeklyPoints: Int!
+  stars: Int!
+  totalLevels: Int!
+  speedTime: Float
+  finalRank: Int
+  updatedAt: Timestamp!
+}
+
+"Booster economy events (GDD analytics: viewed/purchased/used + source)."
+type BoosterEvent @table {
+  id: UUID! @default(expr: "uuidV4()")
+  player: Player!
+  booster: String!        # "undo" | "shuffle" | "tube"
+  action: String!         # "viewed" | "purchased" | "used" | "granted"
+  source: String          # "inventory" | "coins" | "ad" | "unlock" | "iap"
+  level: Int
+  price: Int
+  remaining: Int
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+"IAP / store transactions (bundles, coin packs) once real billing lands."
+type Purchase @table {
+  id: UUID! @default(expr: "uuidV4()")
+  player: Player!
+  sku: String!
+  priceUsd: Float!
+  coinsGranted: Int
+  boostersGranted: Int
+  store: String!          # "play" | "appstore"
+  createdAt: Timestamp! @default(expr: "request.time")
+}

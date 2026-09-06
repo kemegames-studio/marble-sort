@@ -12,6 +12,8 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(KemeSupportPlugin.class);
+        registerPlugin(BillingPlugin.class);
+        registerPlugin(MarbleAdsPlugin.class);
         super.onCreate(savedInstanceState);
         enableImmersiveMode();
     }

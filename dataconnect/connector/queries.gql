@@ -1,0 +1,40 @@
+# Client operations for the marble-sort-client connector.
+
+mutation UpsertPlayer($gameUid: String!, $playerName: String!, $avatar: Int!, $level: Int!, $unlocked: Int!, $coins: Int!, $lives: Int!, $league: String, $onboarded: Boolean!, $updatedAt: Timestamp!) @auth(level: PUBLIC) {
+  player_upsert(data: {
+    gameUid: $gameUid, playerName: $playerName, avatar: $avatar,
+    level: $level, unlocked: $unlocked, coins: $coins, lives: $lives,
+    league: $league, onboarded: $onboarded, updatedAt: $updatedAt
+  })
+}
+
+mutation RecordSession($playerGameUid: String!, $level: Int!, $attempt: Int!, $outcome: String!, $seconds: Float, $boosterFree: Boolean!, $startedAt: Timestamp!, $endedAt: Timestamp) @auth(level: PUBLIC) {
+  gameSession_insert(data: {
+    playerGameUid: $playerGameUid, level: $level, attempt: $attempt,
+    outcome: $outcome, seconds: $seconds, boosterFree: $boosterFree,
+    startedAt: $startedAt, endedAt: $endedAt
+  })
+}
+
+mutation RecordBoosterEvent($playerGameUid: String!, $booster: String!, $action: String!, $source: String, $level: Int, $price: Int, $remaining: Int) @auth(level: PUBLIC) {
+  boosterEvent_insert(data: {
+    playerGameUid: $playerGameUid, booster: $booster, action: $action,
+    source: $source, level: $level, price: $price, remaining: $remaining
+  })
+}
+
+query WeeklyLeaderboard($season: String!, $league: String!, $limit: Int!) @auth(level: PUBLIC) {
+  leaderboardEntries(where: { season: { eq: $season }, league: { eq: $league } }, orderBy: { weeklyPoints: DESC }, limit: $limit) {
+    player { gameUid playerName avatar }
+    weeklyPoints
+    stars
+    totalLevels
+    speedTime
+  }
+}
+
+query PlayerProfile($gameUid: String!) @auth(level: PUBLIC) {
+  player(key: { gameUid: $gameUid }) {
+    playerName avatar level unlocked coins lives league onboarded updatedAt
+  }
+}

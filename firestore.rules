@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Player cloud saves, keyed by the device's random gameUid.
+    // get-only (no listing) so saves can't be enumerated; writes must match
+    // the expected shape and stay small. TODO: once Anonymous Auth is enabled
+    // in the console, require request.auth != null && request.auth.uid mapping.
+    match /players/{playerId} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if request.resource.data.keys().hasOnly(['profile', 'playerName', 'level', 'coins', 'updatedAt'])
+        && request.resource.data.profile is string
+        && request.resource.data.profile.size() < 20000
+        && request.resource.data.playerName is string
+        && request.resource.data.playerName.size() <= 24
+        && request.resource.data.level is int
+        && request.resource.data.coins is int;
+      allow delete: if false;
+    }
+
+    // Public weekly leaderboards: leaderboards/{season}/{league}/{playerId}.
+    // Listing is intended here (it's a leaderboard); writes are shape-validated.
+    match /leaderboards/{season}/{league}/{playerId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['playerName', 'avatar', 'weeklyPoints', 'stars', 'totalLevels', 'speedTime', 'speedDate', 'updatedAt'])
+        && request.resource.data.playerName is string
+        && request.resource.data.playerName.size() <= 24
+        && request.resource.data.avatar is int
+        && request.resource.data.weeklyPoints is int
+        && request.resource.data.weeklyPoints >= 0
+        && request.resource.data.weeklyPoints < 1000000
+        && request.resource.data.stars is int
+        && request.resource.data.totalLevels is int;
+      allow delete: if false;
+    }
+  }
+}

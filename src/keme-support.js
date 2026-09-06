@@ -104,19 +104,21 @@ export async function loadPortalTickets(config, token) {
 }
 
 export async function createPortalTicket(config, token, draft) {
-  const body = new FormData();
-  body.append("subject", draft.subject.trim());
-  body.append("description", draft.description.trim());
-  body.append("gameId", draft.gameId);
-  body.append("category", draft.category);
-  body.append("priority", draft.priority);
-
+  // JSON body (not multipart) — works with the API and with CapacitorHttp's
+  // native fetch, which the app uses to bypass the portal's CORS restriction.
   const response = await fetch(`${config.portalBaseUrl}/portal/tickets`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
-    body,
+    body: JSON.stringify({
+      subject: draft.subject.trim(),
+      description: draft.description.trim(),
+      gameId: draft.gameId,
+      category: draft.category || "gameplay",
+      priority: draft.priority || "P3",
+    }),
   });
 
   return parseResponse(response, "Unable to submit the Keme support ticket.");

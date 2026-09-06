@@ -2,7 +2,11 @@
 
 ## What ships in Marble Sort
 
-Marble Sort now exposes a `CUSTOMER SUPPORT` entry inside the settings modal. The support flow is implemented in the web layer so it works in the Vite browser build and inside the Capacitor Android shell.
+Marble Sort exposes a `SUPPORT` button inside the MENU popup (opened from the hamburger button on the home screen), which also shows the player's copyable Keme Player ID. The support flow is implemented in the web layer so it works in the Vite browser build and inside the Capacitor Android shell.
+
+**CORS / native HTTP (important):** the Keme portal API (`https://api.kemegames.com/api/v1`) does not return an `Access-Control-Allow-Origin` header, so browser/WebView `fetch` to it is blocked — this is why in-app support "wouldn't connect" even though the API works server-side (verified: login, `/portal/tickets/games` listing `game-marble-sort`, ticket create, and ticket list all return 200 via curl). The fix is `CapacitorHttp: { enabled: true }` in `capacitor.config.json`, which patches `fetch` to use native Android HTTP and bypasses CORS entirely. Ticket creation was also switched from multipart `FormData` to a JSON body (`createPortalTicket`), which both the API and CapacitorHttp handle cleanly.
+
+**Simplified panel:** the in-game support modal now shows only Subject, Description, Send/Close, and a Recent Tickets list. Category defaults to `gameplay` and priority to `P3` behind the scenes; the game is auto-routed to `game-marble-sort` via `preferredGameId`. The player-ID / environment / API-URL meta grid, game/category/priority selectors, and native-open button were removed for a cleaner player-facing form.
 
 The in-game support modal:
 
