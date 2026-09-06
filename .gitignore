@@ -26,3 +26,6 @@ android/.v*-apk/
 
 # Downloaded release tooling; install locally when needed
 tools/*.jar
+
+# Firebase app config — carries project API keys; this repository is public.
+android/app/google-services.json

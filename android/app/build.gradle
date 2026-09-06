@@ -43,8 +43,8 @@ android {
         applicationId "com.keme.marblesort"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 26
-        versionName "1.0"
+        versionCode 29
+        versionName "1.0.29"
         buildConfigField "String", "KEME_SDK_KEY", quoteBuildConfig(kemeSdkKey)
         buildConfigField "String", "KEME_ORG_ID", quoteBuildConfig(kemeOrgId)
         buildConfigField "String", "KEME_ENVIRONMENT", quoteBuildConfig(kemeEnvironment)
@@ -91,6 +91,8 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation "com.google.android.gms:play-services-ads:23.6.0"
     implementation "com.google.firebase:firebase-messaging:23.4.0"
+    // Google Play Billing (in-app purchases) — native plugin the v26 web already calls
+    implementation "com.android.billingclient:billing:7.1.1"
     if (localKemeAar.exists()) {
         implementation files(localKemeAar)
     } else if (localKemeJar.exists()) {
