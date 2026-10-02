@@ -1,3 +1,5 @@
+import { TOTAL_LEVELS, difficultyFor } from './challenges.js';
+import { installTimedChallengeRuntime } from '../public/assets/timed-challenge.js';
 import { LEVELS } from "./levels.js";
 import { canMove, hasAnyMoves, isTubeComplete, move, isSolved } from "./game-engine.js";
 import { addCoins, loseLife, refreshLives, MAX_LIVES } from "./economy.js";
@@ -17,8 +19,9 @@ import {
 const app = document.querySelector("#app");
 const STORAGE = "marble-sort-state-v1";
 const STATE_VERSION = 2;
-const WIN_REWARD_COINS = 40;
-const COMPLETE_BONUS_COINS = 80;
+const legacyHardLevels = new Set([30,35,39,44,48,53,57,62,66,71,75,80,84,89,93,98]);
+function levelReward() { return legacyHardLevels.has(profile.level) || profile.level > 100 && (difficultyFor(profile.level) === "hard" || profile.level % 5 === 0) ? 80 : 40; }
+
 const REWARDED_LIVES_AMOUNT = 2;
 const DEFAULT_COINS = 500;
 const DAILY_REWARD_COINS = 250;
@@ -87,6 +90,14 @@ let supportState = {
   nativeError: "",
 };
 
+const timedChallenge = installTimedChallengeRuntime({
+  root: app, inGame: () => view === 'game', modal: () => modal,
+  animating: () => moveAnimating, solved: () => isSolved(tubes), hasMoves: () => hasAnyMoves(tubes),
+  setModal: value => { modal = value; }, render,
+  failureMessage: () => 'You lost 1 life. Retry with a fresh timer.',
+  timeout: () => { profile = loseLife(profile); save(); playSound('lose', { volume: 0.82 }); },
+});
+
 function defaultSupportDraft() {
   return {
     gameId: "",
@@ -115,7 +126,7 @@ function save() {
 }
 function setView(next) { view = next; modal = null; selected = null; moveAnimating = false; render(); syncBackgroundMusic(); }
 function showToast(message) { toast = message; render(); clearTimeout(transitionTimer); transitionTimer = setTimeout(() => { toast = ""; render(); }, 1700); }
-function levelData() { return LEVELS[Math.min(profile.level, 100) - 1]; }
+function levelData() { return LEVELS[Math.min(profile.level, TOTAL_LEVELS) - 1]; }
 function beginLevel() {
   profile = refreshLives(profile);
   completeBonusClaimed = false;
@@ -123,6 +134,7 @@ function beginLevel() {
     save(); render(); playSound("invalid", { volume: 0.56 }); showToast("No lives left. A new life arrives every 30 minutes."); return;
   }
   tubes = structuredClone(levelData().tubes); history = []; selected = null; save(); setView("game");
+  timedChallenge.start(levelData()); render();
 }
 
 function button(label, cls, action, attrs = "") {
@@ -131,7 +143,7 @@ function button(label, cls, action, attrs = "") {
 
 async function showOptionalAd(showAd) {
   try {
-    return await showAd();
+    return await timedChallenge.withAd(showAd);
   } catch {
     return false;
   }
@@ -139,7 +151,7 @@ async function showOptionalAd(showAd) {
 
 function goToNextLevel() {
   playSound("levelStart", { volume: 0.76, rate: 1.03 });
-  profile.level = Math.min(100, profile.level + 1);
+  profile.level = Math.min(TOTAL_LEVELS, profile.level + 1);
   save();
   beginLevel();
 }
@@ -468,8 +480,8 @@ function completeModalMarkup() {
       </div>
       <div class="complete-card-shell">
         <img class="complete-card-art" src="/assets/level-complete-card.svg" alt="Level complete reward popup" />
-        <button class="complete-hotspot complete-hotspot-reward" data-action="complete-reward" aria-label="${WIN_REWARD_COINS} coins already added to your balance">Reward added</button>
-        <button class="complete-hotspot complete-hotspot-bonus${claimedClass}" data-action="complete-bonus" aria-label="${completeBonusClaimed ? `${COMPLETE_BONUS_COINS} bonus coins already claimed` : `Claim ${COMPLETE_BONUS_COINS} bonus coins`}" ${bonusDisabled}>${completeBonusClaimed ? "Claimed" : "Bonus"}</button>
+        <button class="complete-hotspot complete-hotspot-reward" data-action="complete-reward" aria-label="${levelReward()} coins already added to your balance">Reward added</button>
+        <button class="complete-hotspot complete-hotspot-bonus${claimedClass}" data-action="complete-bonus" aria-label="${completeBonusClaimed ? `${levelReward()} bonus coins already claimed` : `Claim ${levelReward()} bonus coins`}" ${bonusDisabled}>${completeBonusClaimed ? "Claimed" : "Bonus"}</button>
         <button class="complete-hotspot complete-hotspot-next" data-action="next" aria-label="Go to the next level">Next level</button>
       </div>
     </div>
@@ -477,6 +489,7 @@ function completeModalMarkup() {
 }
 
 function modalView() {
+  if (modal === "timed-intro" || modal === "timed-failed") return timedChallenge.modalMarkup();
   if (!modal) return "";
   if (modal === "complete") return completeModalMarkup();
   if (modal === "settings") return `<div class="modal-backdrop"><div class="modal"><h2>SETTINGS</h2><p>Music ${profile.music ? "On" : "Off"}</p>${button(profile.music ? "TURN OFF" : "TURN ON", "action secondary", "toggle-music")}<p>Sound ${profile.sound ? "On" : "Off"}</p>${button(profile.sound ? "TURN OFF" : "TURN ON", "action secondary", "toggle-sound")}<p>Need help with support, billing, or account issues?</p>${button("CUSTOMER SUPPORT", "action secondary", "support")}<div class="modal-actions">${view === "game" ? button("HOME", "action secondary", "home") : ""}${button("CLOSE", "action", "close-modal")}</div></div></div>`;
@@ -486,7 +499,7 @@ function modalView() {
     return `<div class="modal-backdrop"><div class="modal"><h2>${rewards ? "DAILY REWARDS" : "DAILY MISSIONS"}</h2><img class="modal-art" src="/assets/${rewards ? "rewards" : "missions"}.png" alt=""/><p>${rewards ? "Come back every day for more coins." : "Complete 3 levels and use one booster."}</p><div class="modal-actions">${button(rewards ? `CLAIM ${DAILY_REWARD_COINS}` : "GOT IT", "action", rewards ? "claim" : "close-modal")}</div></div></div>`;
   }
   if (modal === "failed") return `<div class="modal-backdrop"><div class="modal"><h2>NO MOVES LEFT!</h2><div style="font-size:68px">💔</div><p>You lost 1 life. Try the level again or go back home.</p><div class="modal-actions">${button("HOME", "action secondary", "failed-home")}${button(`WATCH AD +${REWARDED_LIVES_AMOUNT} LIVES`, "action secondary", "rewarded-lives")}${button("RETRY", "action", "retry")}</div></div></div>`;
-  if (modal === "complete") return `<div class="modal-backdrop"><div class="modal"><h2>LEVEL COMPLETE!</h2><div style="font-size:70px">⭐⭐⭐</div><p>COINS EARNED</p><div class="earned-coins"><span class="coin-icon"></span><strong>${WIN_REWARD_COINS}</strong></div><div class="modal-actions">${button("HOME", "action secondary", "complete-home")}${button("NEXT ›", "action", "next")}</div></div></div>`;
+  if (modal === "complete") return `<div class="modal-backdrop"><div class="modal"><h2>LEVEL COMPLETE!</h2><div style="font-size:70px">⭐⭐⭐</div><p>COINS EARNED</p><div class="earned-coins"><span class="coin-icon"></span><strong>${levelReward()}</strong></div><div class="modal-actions">${button("HOME", "action secondary", "complete-home")}${button("NEXT ›", "action", "next")}</div></div></div>`;
   if (modal === "support") {
     const config = getKemeSupportConfig();
     const nativeReady = supportState.nativeAvailable && supportState.nativeConfigured;
@@ -515,6 +528,7 @@ function modalView() {
 function render() {
   const content = view === "loading" ? loadingView() : view === "home" ? homeView() : view === "game" ? gameView() : view === "store" ? storeView() : leaderboardView();
   app.innerHTML = `<div class="game-shell">${content}${modalView()}${toast ? `<div class="toast">${toast}</div>` : ""}</div>`;
+  timedChallenge.onRender();
 }
 
 function celebrateCompletedTube(index) {
@@ -622,6 +636,7 @@ function settleTubeMarbles(index, movedCount = 1) {
 }
 
 function finishMove(result, destination) {
+  const attempt = timedChallenge.attempt;
   tubes = result.tubes;
   selected = null;
   moveAnimating = false;
@@ -632,10 +647,11 @@ function finishMove(result, destination) {
   const resolutionDelay = completed ? completionDelay + 820 : 450;
   if (completed) setTimeout(() => celebrateCompletedTube(destination), completionDelay);
   if (isSolved(tubes)) setTimeout(() => {
+    if (attempt !== timedChallenge.attempt || view !== "game") return;
     playSound("levelComplete", { volume: 0.88 });
     setTimeout(() => playSound("reward", { volume: 0.56, rate: 1.04 }), 190);
-    profile = addCoins(profile, WIN_REWARD_COINS);
-    profile.unlocked = Math.min(100, Math.max(profile.unlocked, profile.level + 1));
+    profile = addCoins(profile, levelReward());
+    profile.unlocked = Math.min(TOTAL_LEVELS, Math.max(profile.unlocked, profile.level + 1));
     if (profile.level === 1) profile.tutorials = { ...profile.tutorials, level1: true };
     completeBonusClaimed = false;
     save();
@@ -643,6 +659,7 @@ function finishMove(result, destination) {
     render();
   }, resolutionDelay);
   else if (!hasAnyMoves(tubes)) setTimeout(() => {
+    if (attempt !== timedChallenge.attempt || view !== "game") return;
     playSound("lose", { volume: 0.82 });
     profile = loseLife(profile);
     save();
@@ -797,6 +814,7 @@ function chooseTube(index) {
   const from = selected;
   const result = move(tubes, from, index);
   moveAnimating = true;
+  timedChallenge.sync();
   animateTransfer(from, index, result);
 }
 
@@ -893,7 +911,7 @@ app.addEventListener("click", async event => {
   }
   else if (action === "complete-reward") {
     playSound("reward", { volume: 0.62, rate: 1.02 });
-    showToast(`${WIN_REWARD_COINS} coins added`);
+    showToast(`${levelReward()} coins added`);
   }
   else if (action === "complete-bonus") {
     if (completeBonusClaimed) { playSound("invalid", { volume: 0.5 }); showToast("Bonus already claimed"); return; }
@@ -907,11 +925,11 @@ app.addEventListener("click", async event => {
       return;
     }
     playSound("reward", { volume: 0.82, rate: 1.06 });
-    profile = addCoins(profile, COMPLETE_BONUS_COINS);
+    profile = addCoins(profile, levelReward());
     completeBonusClaimed = true;
     save();
     render();
-    showToast(`${COMPLETE_BONUS_COINS} bonus coins added`);
+    showToast(`${levelReward()} bonus coins added`);
   }
   else if (action === "rewarded-lives") {
     target.disabled = true;
@@ -949,7 +967,7 @@ app.addEventListener("click", async event => {
     await showOptionalAd(showInterstitialAd);
     goToNextLevel();
   }
-  else if (action === "complete-home") { profile.level = Math.min(100, Math.max(profile.level + 1, profile.unlocked)); save(); setView("home"); }
+  else if (action === "complete-home") { profile.level = Math.min(TOTAL_LEVELS, Math.max(profile.level + 1, profile.unlocked)); save(); setView("home"); }
 });
 
 function updateSupportDraft(event) {

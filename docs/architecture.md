@@ -1,5 +1,7 @@
 # Marble Sort Architecture
 
+The latest feature branch extends progression to 300 levels and adds a timed challenge every fifth level. See [300 levels and timed challenges](300-levels-timed-challenges.md) for the current difficulty sequence, timer policy, and preserved-runtime integration. Historical 100-level and release descriptions below describe the earlier milestones.
+
 ## Decision: standalone web game
 
 The first milestone is a standalone Vite application. This keeps gameplay iteration fast and allows the same build to run locally, in a browser, and inside a later Capacitor Android shell.

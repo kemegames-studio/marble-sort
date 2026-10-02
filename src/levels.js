@@ -1,3 +1,4 @@
+import { EXTRA_LEVELS } from './extra-levels.js';
 const INFERRED_LEVELS = new Set([5, 8, 11, 20, 25, 30, 35, 50, 65, 80, 88, 95, 99, 100]);
 
 export const LEVELS = [
@@ -103,4 +104,5 @@ export const LEVELS = [
   { id: 100, tubes: [['orange', 'olive', 'orange', 'olive'], ['red', 'green', 'green', 'gray'], ['cyan', 'green', 'gray', 'green'], ['red', 'orange', 'olive', 'blue'], ['cyan', 'red', 'purple', 'purple'], ['pink', 'blue', 'gray', 'purple'], ['blue', 'cyan', 'cyan', 'pink'], ['red', 'orange', 'blue', 'pink'], ['purple', 'pink', 'olive', 'gray'], [], []] },
 ];
 
+LEVELS.push(...EXTRA_LEVELS);
 export { INFERRED_LEVELS };
