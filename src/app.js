@@ -1,3 +1,4 @@
+import { renderStore } from '../public/assets/design-system.js';
 import { TOTAL_LEVELS, difficultyFor } from './challenges.js';
 import { installTimedChallengeRuntime } from '../public/assets/timed-challenge.js';
 import { LEVELS } from "./levels.js";
@@ -250,12 +251,15 @@ function gameView() {
 }
 
 function storeView() {
-  return `<section class="screen panel-screen" style="padding:0">${button("‹", "icon-button store-back", "home", 'aria-label="Back"')}<img class="store-image" src="/assets/store.png" alt="Marble Sort store" /></section>`;
+  const products = {};
+  [5000,20000,50000].forEach((coins,i) => { products[['starter_bundle','pro_bundle','legend_bundle'][i]] = { grant: { coins, boostersEach:[10,25,50][i], unlimitedLivesMs:[2,12,24][i]*3600000, noAds:'lifetime' } }; });
+  [2500,6500,15000,35000,75000,160000].forEach((coins,i) => { products[`coin_pack_${i+1}`] = { grant: { coins } }; });
+  return renderStore({ coins:profile.coins, products, available:false });
 }
 
 function leaderboardView() {
   const names = ["Lina", "Fahad", "Maya", "Omar", "Noor", "You"];
-  return `<section class="screen panel-screen">${hud(true)}<div class="panel-header"><h1>LEADERBOARD</h1></div><div class="card leader-list">${names.map((name, i) => `<div class="leader-row"><strong>#${i + 1}</strong><span class="avatar">${name[0]}</span><span>${name} · ${Math.max(profile.level + 12 - i * 3, 1)}</span></div>`).join("")}</div></section>`;
+  return `<section class="screen lb-screen"><button class="ds-back" data-action="home" aria-label="Back to home">‹</button><header class="lb-header"><div class="lb-banner"><h1>LEADERBOARD</h1></div></header><div class="lb-panel"><div class="lb-list">${names.map((name, i) => `<div class="lb-row ${name === 'You' ? 'lb-row-you' : ''}"><strong class="lb-rank">${i + 1}</strong><span class="lb-avatar"><img src="/assets/ball-blue.svg" alt="" /></span><span class="lb-name"><strong>${name}</strong><small>Level ${Math.max(profile.level + 12 - i * 3, 1)}</small></span></div>`).join("")}</div></div></section>`;
 }
 
 function escapeHtml(value) {

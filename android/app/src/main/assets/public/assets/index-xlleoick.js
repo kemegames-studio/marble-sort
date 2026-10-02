@@ -1,3 +1,4 @@
+import { renderStore } from "./design-system.js";
 import { EXTRA_LEVELS } from "./extra-levels.js";
 import { TOTAL_LEVELS, difficultyFor } from "./challenge-rules.js";
 import { installTimedChallengeRuntime } from "./timed-challenge.js";
@@ -60,35 +61,7 @@ import { installTimedChallengeRuntime } from "./timed-challenge.js";
     <strong class="st-coin-amount">${e.coins.toLocaleString("en-US")}</strong>
     <span class="st-pile st-pile-grid" aria-hidden="true">${a}</span>
     ${m(kn(e.product,e.price),"st-price","buy-product",`data-product="${e.product}" aria-label="Buy ${e.coins.toLocaleString("en-US")} coins"`)}
-  </article>`}function ct(){const BundleCards=[
-  {product:"starter_bundle",asset:"/assets/store-bundle-starter-attached.jpg",label:"Starter Bundle"},
-  {product:"pro_bundle",asset:"/assets/store-bundle-apprentice-attached.jpg",label:"Apprentice Bundle"},
-  {product:"legend_bundle",asset:"/assets/store-bundle-mage-attached.jpg",label:"Mage Bundle"}
-],CoinPacks=[
-  {product:"coin_pack_1",coins:"2,500",position:"coin-1"},
-  {product:"coin_pack_2",coins:"6,500",position:"coin-2"},
-  {product:"coin_pack_3",coins:"15,000",position:"coin-3"},
-  {product:"coin_pack_4",coins:"35,000",position:"coin-4"},
-  {product:"coin_pack_5",coins:"75,000",position:"coin-5"},
-  {product:"coin_pack_6",coins:"160,000",position:"coin-6"}
-];return`<section class="screen st-screen store-premium">
-  <header class="st-header store-premium-header">
-    ${m('<img class="btn-icon" src="/assets/back-arrow.svg" alt="" />',"icon-button icon-back st-back","home",'aria-label="Back"')}
-    <div class="store-home-coin-bar" aria-label="${o.coins.toLocaleString("en-US")} coins">
-      <img src="/assets/home-screen-clean-features.png" alt="" aria-hidden="true" />
-      <strong>${o.coins.toLocaleString("en-US")}</strong>
-    </div>
-  </header>
-  <div class="store-premium-title"><span>STORE</span></div>
-  <div class="store-section-title">BUNDLES</div>
-  <div class="store-art-bundles">${BundleCards.map(e=>m(`<img src="${e.asset}" alt="" />`,"store-bundle-card","buy-product",`data-product="${e.product}" aria-label="Buy ${e.label}"`)).join("")}</div>
-  <div class="store-coin-panel" aria-label="Coin packages">
-    <img class="store-coin-panel-art" src="/assets/store-coins-attached.png" alt="Coin packages" />
-    ${CoinPacks.map(e=>m("",`store-coin-hot ${e.position}`,"buy-product",`data-product="${e.product}" aria-label="Buy ${e.coins} coins"`)).join("")}
-  </div>
-  ${m("Restore Purchases","st-restore store-premium-restore","restore-purchases",'aria-label="Restore previous purchases"')}
-  <p class="st-footer store-premium-footer">Secure purchases through Google Play.</p>
-</section>`} const ut=[{id:"weekly",label:"WEEKLY",icon:""},{id:"stars",label:"STARS",icon:""},{id:"speed",label:"SPEED",icon:""},{id:"events",label:"EVENTS",icon:""}];function Aa(e,a=""){return e.isPlayer?`<span class="lb-avatar lb-avatar-you ${a}" aria-hidden="true">${le[(o.avatar||0)%le.length]}</span>`:e.real?`<span class="lb-avatar lb-avatar-real ${a}" aria-hidden="true">${le[(e.avatar||0)%le.length]}</span>`:`<span class="lb-avatar ${a}" aria-hidden="true"><img src="/assets/ball-${e.avatar}.svg" alt="" /></span>`}function wn(e){const a=e.movement||0;return a>0?`<span class="lb-move lb-move-up" aria-label="Moved up ${a}">+${a}</span>`:a<0?`<span class="lb-move lb-move-down" aria-label="Moved down ${-a}">-${-a}</span>`:'<span class="lb-move lb-move-flat" aria-hidden="true">-</span>'}function $n(e){return P==="stars"?`<span class="lb-points">${e.stars.toLocaleString("en-US")}</span>`:P==="speed"?`<span class="lb-points lb-time">${br(e.speedTime)}</span>`:`<span class="lb-points">${e.weeklyPoints.toLocaleString("en-US")}</span>`}function Sn(e){return P==="stars"?`<small>${e.totalLevels.toLocaleString("en-US")} levels</small>`:P==="speed"?`<small>${new Date(e.speedDate).toLocaleDateString(void 0,{weekday:"short",month:"short",day:"numeric"})}</small>`:`<small>${H(e.league).badge} ${H(e.league).name}</small>`}function dt(e,a){return`<div class="lb-row ${e.isPlayer?"lb-row-you":""}" style="--i:${a}">
+  </article>`}function ct(){return renderStore({coins:o.coins,products:Ze,price:kn})} const ut=[{id:"weekly",label:"WEEKLY",icon:""},{id:"stars",label:"STARS",icon:""},{id:"speed",label:"SPEED",icon:""},{id:"events",label:"EVENTS",icon:""}];function Aa(e,a=""){return e.isPlayer?`<span class="lb-avatar lb-avatar-you ${a}" aria-hidden="true">${le[(o.avatar||0)%le.length]}</span>`:e.real?`<span class="lb-avatar lb-avatar-real ${a}" aria-hidden="true">${le[(e.avatar||0)%le.length]}</span>`:`<span class="lb-avatar ${a}" aria-hidden="true"><img src="/assets/ball-${e.avatar}.svg" alt="" /></span>`}function wn(e){const a=e.movement||0;return a>0?`<span class="lb-move lb-move-up" aria-label="Moved up ${a}">+${a}</span>`:a<0?`<span class="lb-move lb-move-down" aria-label="Moved down ${-a}">-${-a}</span>`:'<span class="lb-move lb-move-flat" aria-hidden="true">-</span>'}function $n(e){return P==="stars"?`<span class="lb-points">${e.stars.toLocaleString("en-US")}</span>`:P==="speed"?`<span class="lb-points lb-time">${br(e.speedTime)}</span>`:`<span class="lb-points">${e.weeklyPoints.toLocaleString("en-US")}</span>`}function Sn(e){return P==="stars"?`<small>${e.totalLevels.toLocaleString("en-US")} levels</small>`:P==="speed"?`<small>${new Date(e.speedDate).toLocaleDateString(void 0,{weekday:"short",month:"short",day:"numeric"})}</small>`:`<small>${H(e.league).name}</small>`}function dt(e,a){return`<div class="lb-row ${e.isPlayer?"lb-row-you":""}" style="--i:${a}">
     <span class="lb-rank">${e.rank}</span>
     ${Aa(e)}
     <span class="lb-name"><strong>${e.isPlayer?"You":K(e.playerName)}</strong>${Sn(e)}</span>
@@ -100,7 +73,7 @@ import { installTimedChallengeRuntime } from "./timed-challenge.js";
       ${Aa(s,"lb-avatar-podium")}
       <div class="lb-pedestal">
         <strong>${s.isPlayer?"You":K(s.playerName)}</strong>
-        <span class="lb-podium-points">STAR ${(P==="stars"?s.stars:s.weeklyPoints).toLocaleString("en-US")}</span>
+        <span class="lb-podium-points">★ ${(P==="stars"?s.stars:s.weeklyPoints).toLocaleString("en-US")}</span>
       </div>
     </div>`:"";return`<div class="lb-podium">${t(n,2)}${t(a,1)}${t(r,3)}</div>`}function gt(e){return e?`<div class="lb-row lb-row-you lb-row-pinned">
     <span class="lb-rank">${e.rank}</span>
@@ -122,7 +95,7 @@ import { installTimedChallengeRuntime } from "./timed-challenge.js";
       <div class="lb-banner"><h1>LEADERBOARD</h1></div>
     </header>
     <div class="lb-status">
-      <span class="lb-league-chip">${r.badge} ${r.name} League</span>
+      <span class="lb-league-chip"><span aria-hidden="true">★</span> ${r.name} League</span>
       <span class="lb-status-stat">Rank ${b?`#${b}`:"-"}</span>
       <span class="lb-status-stat">${w.toLocaleString("en-US")} pts</span>
       ${m("i","lb-info-btn","lb-info",'aria-label="How rankings work"')}
