@@ -94,8 +94,10 @@ const timedChallenge = installTimedChallengeRuntime({
   root: app, inGame: () => view === 'game', modal: () => modal,
   animating: () => moveAnimating, solved: () => isSolved(tubes), hasMoves: () => hasAnyMoves(tubes),
   setModal: value => { modal = value; }, render,
-  failureMessage: () => 'You lost 1 life. Retry with a fresh timer.',
-  timeout: () => { profile = loseLife(profile); save(); playSound('lose', { volume: 0.82 }); },
+  rewardedContinue: showRewardedCoinsAd,
+  onContinue: () => playSound('reward', { volume: 0.8 }),
+  failureMessage: () => profile.unlimitedLivesUntil > Date.now() ? 'Unlimited lives are active. Retry with a fresh timer.' : 'You lost 1 life. Retry with a fresh timer.',
+  timeout: () => { if (!(profile.unlimitedLivesUntil > Date.now())) profile = loseLife(profile); save(); playSound('lose', { volume: 0.82 }); },
 });
 
 function defaultSupportDraft() {

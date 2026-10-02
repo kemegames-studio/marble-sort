@@ -91,8 +91,8 @@ async function newPage(level,size={width:390,height:844},overrides={}) {
     // Accelerate only this clock; no unrelated backend or native calls.
     await page.evaluate(()=>{ const original=performance.now.bind(performance); performance.now=()=>original()+400000; });
     await page.getByRole('dialog',{name:'Time is up'}).waitFor();
-    assert.equal((await state(page)).lives,4);
-    await page.waitForTimeout(400); assert.equal((await state(page)).lives,4);
+    assert.equal((await state(page)).lives,5);
+    await page.waitForTimeout(400); assert.equal((await state(page)).lives,5);
     await click(page,'retry');
     await page.getByRole('dialog',{name:'Timed challenge'}).waitFor();
     assert.equal((await state(page)).lives,4);

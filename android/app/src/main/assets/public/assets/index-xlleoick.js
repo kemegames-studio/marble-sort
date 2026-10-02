@@ -386,6 +386,7 @@ import { installTimedChallengeRuntime } from "./timed-challenge.js";
 const timedChallenge=installTimedChallengeRuntime({
 root:S,inGame:()=>z==="game",modal:()=>g,animating:()=>De,
 solved:()=>Ce(E),hasMoves:()=>zn(E),setModal:value=>{g=value},render:d,onReady:()=>Fr(),
+rewardedContinue:()=>aa("coins"),onContinue:()=>{q("timed_continue_rewarded",{level:o.level,seconds:30});c("reward",{volume:.8})},
 failureMessage:()=>$e()?"Retry with a fresh timer. Your unlimited lives are active.":"You lost 1 life. Retry with a fresh timer.",
 timeout:()=>{$e()||(o=en(o));q("level_failed",{level:o.level,reason:"timeout"});c("lose",{volume:.82});y()}
 });

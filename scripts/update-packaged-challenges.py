@@ -35,12 +35,18 @@ if 'installTimedChallengeRuntime' not in s:
 const timedChallenge=installTimedChallengeRuntime({
 root:S,inGame:()=>z==="game",modal:()=>g,animating:()=>De,
 solved:()=>Ce(E),hasMoves:()=>zn(E),setModal:value=>{g=value},render:d,onReady:()=>Fr(),
+rewardedContinue:()=>aa("coins"),onContinue:()=>{q("timed_continue_rewarded",{level:o.level,seconds:30});c("reward",{volume:.8})},
 failureMessage:()=>$e()?"Retry with a fresh timer. Your unlimited lives are active.":"You lost 1 life. Retry with a fresh timer.",
 timeout:()=>{$e()||(o=en(o));q("level_failed",{level:o.level,reason:"timeout"});c("lose",{volume:.82});y()}
 });
 '''
     replace('Q();y();Zn(_().gameUid);', adapter + 'Q();y();Zn(_().gameUid);')
     bundle.write_text(s, encoding='utf-8')
+
+existing = bundle.read_text()
+if 'rewardedContinue:()=>aa("coins")' not in existing:
+    existing = existing.replace('failureMessage:()=>$e()?', 'rewardedContinue:()=>aa("coins"),onContinue:()=>{q("timed_continue_rewarded",{level:o.level,seconds:30});c("reward",{volume:.8})},\nfailureMessage:()=>$e()?')
+    bundle.write_text(existing)
 
 for name, source in [('challenge-rules.js', root/'src/challenges.js'), ('extra-levels.js', root/'src/extra-levels.js'), ('timed-challenge.js', root/'public/assets/timed-challenge.js'), ('timed-challenge.css', root/'public/assets/timed-challenge.css')]:
     shutil.copyfile(source, assets/name)

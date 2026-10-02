@@ -111,10 +111,13 @@ public class MarbleAdsPlugin extends Plugin {
                 @Override
                 public void onAdLoaded(@NonNull RewardedAd ad) {
                     final boolean[] earnedReward = { false };
+                    final JSObject[] rewardResult = { null };
                     ad.setFullScreenContentCallback(new FullScreenContentCallback() {
                         @Override
                         public void onAdDismissedFullScreenContent() {
-                            if (!earnedReward[0]) {
+                            if (earnedReward[0]) {
+                                call.resolve(rewardResult[0]);
+                            } else {
                                 call.reject("Rewarded ad was closed before reward was earned.");
                             }
                         }
@@ -129,7 +132,7 @@ public class MarbleAdsPlugin extends Plugin {
                         JSObject result = new JSObject();
                         result.put("amount", rewardItem.getAmount());
                         result.put("type", rewardItem.getType());
-                        call.resolve(result);
+                        rewardResult[0] = result;
                     });
                 }
 
