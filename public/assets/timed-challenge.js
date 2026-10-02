@@ -44,7 +44,9 @@ export function installTimedChallengeRuntime(adapter) {
         const badge = document.createElement('div');
         badge.className = 'challenge-timer'; badge.setAttribute('role', 'timer');
         badge.textContent = `TIME ${formatRemaining(clock.remaining)}`;
-        scene.append(badge);
+        const hud = scene.querySelector('.gameplay-hud');
+        if (hud) hud.insertBefore(badge, hud.querySelector('.gameplay-settings'));
+        else scene.append(badge);
       }
     },
     async withAd(action) {

@@ -1,4 +1,4 @@
-.challenge-timer { position:absolute; z-index:8; top:22%; left:50%; transform:translateX(-50%); min-width:120px; padding:7px 15px; border:2px solid #ffd46c; border-radius:24px; background:linear-gradient(#3152b6,#19296b); color:#fff5c6; box-shadow:0 3px 12px #0006; text-align:center; font:bold 17px system-ui; font-variant-numeric:tabular-nums; pointer-events:none; }
+.challenge-timer { position:relative; z-index:8; flex:0 0 35%; min-width:0; padding:5px 4px; border:2px solid #ffd46c; border-radius:24px; background:linear-gradient(#3152b6,#19296b); color:#fff5c6; box-shadow:0 3px 12px #0006; text-align:center; white-space:nowrap; font:bold clamp(12px, 2dvh, 16px) system-ui; font-variant-numeric:tabular-nums; pointer-events:none; }
 .challenge-timer.urgent { background:linear-gradient(#c84938,#832536); border-color:#ffb375; }
 .challenge-popup { width:min(86vw,350px); padding:25px 20px; border:3px solid #f6c562; border-radius:25px; background:linear-gradient(#4658b9,#252664); color:white; text-align:center; box-shadow:0 12px 45px #0008; font-family:system-ui; }
 .challenge-popup h2 { color:#ffe393; font-size:25px; margin:0 0 18px; }
@@ -7,4 +7,3 @@
 .challenge-actions { display:flex; gap:12px; justify-content:center; margin-top:22px; }
 .challenge-actions button { min-height:48px; padding:10px 20px; border:2px solid #fff1aa; border-radius:16px; background:linear-gradient(#ffe083,#e6a13c); color:#35205c; font:bold 16px system-ui; }
 .challenge-actions button:active { transform:translateY(2px); }
-@media (max-height:650px) { .challenge-timer { top:22%; padding:2px 12px; font-size:14px; } }

@@ -99,8 +99,11 @@ async function newPage(level,size={width:390,height:844},overrides={}) {
     await click(page,'start-timed');
     assert.equal(await page.locator('.game-tube').count(),level>100?EXTRA_LEVELS.find(l=>l.id===level).tubes.length:7);
     const timer=await page.locator('.challenge-timer').boundingBox();
-    const label=await page.locator('.gameplay-level-value').boundingBox();
-    assert.ok(timer && label && timer.y>=label.y+label.height-2,'Timer overlaps the level label');
+    const coins=await page.locator('.gameplay-coins').boundingBox();
+    const settings=await page.locator('.gameplay-settings').boundingBox();
+    assert.ok(timer && coins && settings,'HUD elements are visible');
+    assert.ok(Math.abs(timer.y+timer.height/2-coins.y-coins.height/2)<3,'Timer must align with coins');
+    assert.ok(timer.x>=coins.x+coins.width-2 && timer.x+timer.width<=settings.x+2,'Timer must fit between coins and settings');
     await page.waitForTimeout(150);
     await page.screenshot({path:`/tmp/marble-${process.env.CHALLENGE_PAYLOAD ? 'source' : 'android'}-challenge-${level}.png`});
     assert.deepEqual(errors,[]);
