@@ -8,6 +8,14 @@ async function click(page,action){await page.locator(`[data-action="${action}"]`
 async function profile(page){return page.evaluate(()=>JSON.parse(localStorage.getItem('marble-sort-state-v1')));}
 async function fits(page,selector,size){const el=page.locator(selector).first();const content=selector==='.popup'?el.locator('.popup-body'):el;if(selector!=='.lv-art-wrap')assert.ok(await content.evaluate(n=>n.scrollWidth<=n.clientWidth+2),`${selector} has no horizontal overflow`);const b=await el.boundingBox();assert.ok(b.x>=-1&&b.x+b.width<=size.width+1,`${selector} fits width`);}
 
+async function closeFits(page,selector,size){
+ const panel=page.locator(selector).first();const close=panel.locator('[data-action="close-modal"], [data-support-action="close"]').first();
+ const p=await panel.boundingBox(),b=await close.boundingBox();assert.ok(b&&b.width>=44&&b.height>=44,'Close target is at least 44px');
+ assert.ok(b.x>=p.x&&b.y>=p.y&&b.x+b.width<=p.x+p.width+1&&b.y+b.height<=p.y+p.height+1,`${selector} close stays inside panel`);
+ assert.ok(b.x>=0&&b.y>=0&&b.x+b.width<=size.width&&b.y+b.height<=size.height,'Close stays in viewport');
+ assert.ok(await close.evaluate(n=>{const r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))}),`${selector}: close is not covered by title artwork`);
+}
+
 (async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));browser=await chromium.launch({executablePath:process.env.CHALLENGE_CHROMIUM||undefined,args:['--no-sandbox','--disable-dev-shm-usage']});
 for(const size of [{width:320,height:568},{width:390,height:844},{width:430,height:932},{width:768,height:1024}]){
  const page=await browser.newPage({viewport:size,reducedMotion:'reduce',deviceScaleFactor:1});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
@@ -18,9 +26,9 @@ for(const size of [{width:320,height:568},{width:390,height:844},{width:430,heig
  await page.locator('.ds-buy[data-product="coin_pack_1"]').click();await page.waitForTimeout(150);assert.equal((await profile(page)).coins,before.coins,'Web purchase unavailable must not grant coins');await click(page,'restore-purchases');await click(page,'home');
  await click(page,'leaderboard');await fits(page,'.lb-screen',size);await fits(page,'.lb-panel',size);
  for(const tab of ['stars','speed','events','weekly']){await page.locator(`[data-action="lb-tab"][data-tab="${tab}"]`).click();assert.ok(await page.locator(`[data-tab="${tab}"]`).evaluate(n=>n.classList.contains('is-active')));await fits(page,'.lb-panel',size);}
- await click(page,'lb-info');await fits(page,'.popup',size);await click(page,'close-modal');await click(page,'home');
- for(const action of ['settings','rewards','missions','noads','menu','lives']){await click(page,action);await page.waitForTimeout(450);const selector=action==='settings'||action==='menu'?'.popup':action==='noads'?'.na-modal':action==='lives'?'.lv-art-wrap':'.liveops-modal';await fits(page,selector,size);if(action==='settings'){await click(page,'toggle-music');assert.equal((await profile(page)).music,true);await click(page,'toggle-music');}await click(page,'close-modal');}
- await click(page,'menu');await click(page,'support');await page.locator('.cs26-modal').waitFor();await page.waitForTimeout(450);await fits(page,'.cs26-modal',size);await page.locator('[data-support-action="close"]').click();
+ await click(page,'lb-info');await fits(page,'.popup',size);await closeFits(page,'.popup',size);await click(page,'close-modal');await click(page,'home');
+ for(const action of ['settings','rewards','missions','noads','menu','lives']){await click(page,action);await page.waitForTimeout(450);const selector=action==='settings'||action==='menu'?'.popup':action==='noads'?'.na-modal':action==='lives'?'.lv-art-wrap':'.liveops-modal';await fits(page,selector,size);await closeFits(page,selector,size);if(action==='settings'){await click(page,'toggle-music');assert.equal((await profile(page)).music,true);await click(page,'toggle-music');}await click(page,'close-modal');}
+ await click(page,'menu');await click(page,'support');await page.locator('.cs26-modal').waitFor();await page.waitForTimeout(450);await fits(page,'.cs26-modal',size);await closeFits(page,'.cs26-modal',size);await page.locator('[data-support-action="close"]').click();
  assert.equal((await profile(page)).coins,before.coins);assert.equal((await profile(page)).lives,before.lives);assert.deepEqual(errors,[]);await page.close();console.log(`PASS design navigation, store, tabs, popups and state at ${size.width}x${size.height}`);
 }
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{await browser?.close();server.close()});

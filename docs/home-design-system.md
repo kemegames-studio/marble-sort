@@ -9,3 +9,5 @@ Leaderboard rankings, tabs, empty states, info popup and player highlighting ret
 `python3 scripts/update-packaged-design.py` copies the two shared presentation files and applies narrow, repeatable presentation changes to the preserved production bundle. Do not replace that bundle with a build of the older source or run Capacitor sync for this change.
 
 Validation: Vite build, Node tests, `scripts/qa-design-system.cjs` (320x568, 390x844, 430x932, 768x1024), and rewarded-time browser regression. Browser checks cover product buttons/prices, scrolling, rankings/tabs, popups, setting toggles and unchanged coins/lives. Real Google Play purchase validation requires an Android device.
+
+Dismiss controls are anchored 12px inside the panel's top-right corner with a 44px target. Header artwork reserves a separate region; the painted X in the daily-login title is clipped so only the working close control appears. Customer support's nested header uses the same placement. Browser checks also verify close-control bounds, viewport visibility, and unobstructed hit targets at all four sizes.

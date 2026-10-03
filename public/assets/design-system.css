@@ -118,3 +118,25 @@ button:focus-visible {outline:3px solid #fff;outline-offset:4px}
 .menu-popup-v2 .menu-name-row strong {flex:1}.menu-popup-v2 .menu-edit {flex:0 0 44px!important}
 .menu-level-chip {max-width:100%;font-size:12px;white-space:nowrap}
 @media(max-width:350px) {.menu-hero-card {grid-template-columns:54px minmax(0,1fr)!important;gap:8px!important;padding:9px!important}.menu-avatar-main {width:54px!important;height:54px!important}.menu-popup-v2 .menu-name-row strong {font-size:13px!important}.menu-popup-v2 .menu-name-row {gap:4px!important;padding-right:4px!important}.menu-popup-v2 .menu-name-input {width:100%!important}.menu-level-chip {font-size:10px;padding-inline:7px}}
+/* Anchor dismiss controls to the panel, rather than to title artwork. */
+.popup > .popup-close,.menu-popup-v2 > .popup-close,
+.liveops-modal > .liveops-close,.dl-modal > .liveops-close,
+.na-modal > .na-modal-close,.booster-ad-modal > .booster-ad-close,
+.lv-art-wrap > .lv-hot-close {
+  position:absolute!important;top:12px!important;right:12px!important;left:auto!important;bottom:auto!important;
+  width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;
+  margin:0!important;transform:none;z-index:30!important;
+}
+.popup:not(.tut-popup) > .popup-ribbon {
+  min-width:0!important;max-width:calc(100% - 124px)!important;padding-inline:10px!important;
+  font-size:clamp(13px,3.5vw,22px)!important;white-space:normal;
+}
+.liveops-modal > .liveops-art-title {width:calc(100% - 56px)!important;margin-left:0!important;margin-right:auto!important}
+.cs26-header {top:12px;left:18px;right:68px;height:48px;padding:0 4px;border-width:2px}
+.cs26-header h2 {font-size:clamp(15px,4vw,20px);white-space:normal}
+.cs26-life-ring {display:none}
+.cs26-header > .cs26-close {top:0!important;right:-56px!important;width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}
+.dl-modal > .liveops-close {background-image:url('/assets/popup-close-attached.png')!important;background-size:153% 153%!important;filter:drop-shadow(0 4px 4px #00347770)!important}
+/* The supplied login title contains a painted X; show only the working control. */
+.liveops-art-title-rewards img {clip-path:none;-webkit-mask-image:radial-gradient(ellipse 8% 11% at 87% 56%,transparent 96%,#000 100%);mask-image:radial-gradient(ellipse 8% 11% at 87% 56%,transparent 96%,#000 100%)}
+.liveops-art-title-rewards img {filter:none}
