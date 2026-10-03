@@ -140,3 +140,13 @@ button:focus-visible {outline:3px solid #fff;outline-offset:4px}
 /* The supplied login title contains a painted X; show only the working control. */
 .liveops-art-title-rewards img {clip-path:none;-webkit-mask-image:radial-gradient(ellipse 8% 11% at 87% 56%,transparent 96%,#000 100%);mask-image:radial-gradient(ellipse 8% 11% at 87% 56%,transparent 96%,#000 100%)}
 .liveops-art-title-rewards img {filter:none}
+.points-result,.points-guide {width:100%;border:2px solid #55cdff;border-radius:14px;background:var(--ds-inset);color:#fff;padding:10px 12px;text-align:left;font-family:"Trebuchet MS",Arial,sans-serif}
+.points-result header,.points-result footer,.points-result dl>div,.points-guide dl>div {display:flex;align-items:center;justify-content:space-between;gap:10px}
+.points-result header {font-size:11px;font-weight:900;letter-spacing:.02em}.points-result header strong {font-size:25px;color:#d6ff77;text-shadow:0 2px #247800}
+.points-result dl,.points-guide dl {display:grid;gap:4px;margin:6px 0 8px;font-size:12px}.points-result dt,.points-guide dt {flex:1}.points-result dd,.points-guide dd {margin:0;font-weight:900;color:#ffe78b;white-space:nowrap}
+.points-result footer {border-top:1px solid #55cdff66;padding-top:7px;font-size:12px}.points-result p,.points-guide p {font-size:12px!important;line-height:1.4;margin:6px 0!important;color:#e4f6ff}
+.points-guide {width:min(100%,380px);margin:14px auto 0}.points-guide summary {min-height:28px;cursor:pointer;font-size:13px;font-weight:900}.points-guide[open] summary {margin-bottom:10px}
+.winpop {max-height:calc(100dvh - 44px);overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding:10px 6px 14px;width:min(92%,350px)}
+.winpop .winpop-ribbon::before,.winpop .winpop-ribbon::after {display:none}
+@media(max-height:650px) {.winpop-stars {height:56px}.winpop-pile {display:none}.winpop-card {gap:7px;padding:16px 10px 12px}.points-result {padding:8px 10px}.points-result dl {gap:3px;font-size:11px}.winpop-earned-value {font-size:24px}}
+.failpop,.modal:has(.points-result) {max-height:calc(100dvh - 44px);overflow-y:auto;scrollbar-width:none}

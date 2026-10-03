@@ -64,7 +64,7 @@ export function installTimedChallengeRuntime(adapter) {
       return `<div class="modal-backdrop challenge-backdrop"><div class="challenge-popup challenge-timeout" role="dialog" aria-modal="true" aria-label="Time is up" aria-describedby="challenge-timeout-description">
         <div class="challenge-clock-art" aria-hidden="true"><span></span></div>
         <h2 id="challenge-timeout-title">TIME'S UP!</h2>
-        <p id="challenge-timeout-description">${continued ? adapter.failureMessage() : 'Keep your board and get another chance.'}</p>
+        <p id="challenge-timeout-description">${continued ? adapter.failureMessage() : 'Keep your board and get another chance.'}</p>${adapter.pointsSummary?.() || ''}
         ${continued ? '<div class="challenge-used">Extra-time continue used this attempt</div>' : `<div class="challenge-extra"><strong>+30</strong><span>EXTRA SECONDS</span></div>
         <button class="challenge-watch" data-action="continue-timed" ${busy ? 'disabled' : ''}><span class="challenge-ad-icon" aria-hidden="true">▶</span><span>${busy ? 'LOADING AD…' : 'WATCH AD & CONTINUE'}</span></button>
         <p class="challenge-note">Once per attempt · Your board stays the same</p>`}

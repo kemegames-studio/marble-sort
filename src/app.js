@@ -1,3 +1,4 @@
+import { weeklyPoints, winPoints, renderPointsResult, renderPointsGuide } from '../public/assets/leaderboard-points.js';
 import { renderStore } from '../public/assets/design-system.js';
 import { TOTAL_LEVELS, difficultyFor } from './challenges.js';
 import { installTimedChallengeRuntime } from '../public/assets/timed-challenge.js';
@@ -67,6 +68,15 @@ function loadProfile() {
 
 let profile = loadProfile();
 let view = "loading";
+let lastLevelScore = null, usedScoreBooster = false;
+function scoreState() {
+  const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - (d.getDay()+6)%7);
+  const start = new Date(d.getFullYear(),0,1), week = Math.ceil(((d-start)/86400000 + start.getDay()+1)/7);
+  const season = `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
+  profile.lb ||= { season, league:'bronze', weekly:{}, totals:{stars:Math.max(0,profile.unlocked-1)*3,levels:Math.max(0,profile.unlocked-1)}, tries:{} };
+  if (profile.lb.season !== season) { profile.lb.season=season; profile.lb.weekly={}; }
+  return profile.lb;
+}
 let tubes = [];
 let selected = null;
 let history = [];
@@ -96,6 +106,7 @@ const timedChallenge = installTimedChallengeRuntime({
   animating: () => moveAnimating, solved: () => isSolved(tubes), hasMoves: () => hasAnyMoves(tubes),
   setModal: value => { modal = value; }, render,
   rewardedContinue: showRewardedCoinsAd,
+  pointsSummary: () => renderPointsResult(null,weeklyPoints(scoreState().weekly)),
   onContinue: () => playSound('reward', { volume: 0.8 }),
   failureMessage: () => profile.unlimitedLivesUntil > Date.now() ? 'Unlimited lives are active. Retry with a fresh timer.' : 'You lost 1 life. Retry with a fresh timer.',
   timeout: () => { if (!(profile.unlimitedLivesUntil > Date.now())) profile = loseLife(profile); save(); playSound('lose', { volume: 0.82 }); },
@@ -136,6 +147,7 @@ function beginLevel() {
   if (profile.lives <= 0) {
     save(); render(); playSound("invalid", { volume: 0.56 }); showToast("No lives left. A new life arrives every 30 minutes."); return;
   }
+  const score = scoreState(); score.tries[profile.level] = (score.tries[profile.level] || 0) + 1; usedScoreBooster = false; lastLevelScore = null;
   tubes = structuredClone(levelData().tubes); history = []; selected = null; save(); setView("game");
   timedChallenge.start(levelData()); render();
 }
@@ -259,7 +271,7 @@ function storeView() {
 
 function leaderboardView() {
   const names = ["Lina", "Fahad", "Maya", "Omar", "Noor", "You"];
-  return `<section class="screen lb-screen"><button class="ds-back" data-action="home" aria-label="Back to home">‹</button><header class="lb-header"><div class="lb-banner"><h1>LEADERBOARD</h1></div></header><div class="lb-panel"><div class="lb-list">${names.map((name, i) => `<div class="lb-row ${name === 'You' ? 'lb-row-you' : ''}"><strong class="lb-rank">${i + 1}</strong><span class="lb-avatar"><img src="/assets/ball-blue.svg" alt="" /></span><span class="lb-name"><strong>${name}</strong><small>Level ${Math.max(profile.level + 12 - i * 3, 1)}</small></span></div>`).join("")}</div></div></section>`;
+  return `<section class="screen lb-screen"><button class="ds-back" data-action="home" aria-label="Back to home">‹</button><header class="lb-header"><div class="lb-banner"><h1>LEADERBOARD</h1></div></header>${renderPointsGuide()}<div class="lb-panel"><p>Your weekly points: <strong>${weeklyPoints(scoreState().weekly)}</strong></p><div class="lb-list">${names.map((name, i) => `<div class="lb-row ${name === 'You' ? 'lb-row-you' : ''}"><strong class="lb-rank">${i + 1}</strong><span class="lb-avatar"><img src="/assets/ball-blue.svg" alt="" /></span><span class="lb-name"><strong>${name}</strong><small>Level ${Math.max(profile.level + 12 - i * 3, 1)}</small></span></div>`).join("")}</div></div></section>`;
 }
 
 function escapeHtml(value) {
@@ -469,29 +481,7 @@ async function launchNativeSupport() {
 }
 
 function completeModalMarkup() {
-  const claimedClass = completeBonusClaimed ? " is-claimed" : "";
-  const bonusDisabled = completeBonusClaimed ? "disabled" : "";
-  return `<div class="modal-backdrop complete-backdrop">
-    <div class="complete-modal" role="dialog" aria-modal="true" aria-label="Level complete rewards">
-      <div class="complete-stars" aria-hidden="true">
-        <span class="complete-star-frame complete-star-left" style="--star-delay:0ms">
-          <img class="complete-star-art" src="/assets/complete-star.png" alt="" />
-        </span>
-        <span class="complete-star-frame complete-star-center" style="--star-delay:150ms">
-          <img class="complete-star-art" src="/assets/complete-star.png" alt="" />
-        </span>
-        <span class="complete-star-frame complete-star-right" style="--star-delay:300ms">
-          <img class="complete-star-art" src="/assets/complete-star.png" alt="" />
-        </span>
-      </div>
-      <div class="complete-card-shell">
-        <img class="complete-card-art" src="/assets/level-complete-card.svg" alt="Level complete reward popup" />
-        <button class="complete-hotspot complete-hotspot-reward" data-action="complete-reward" aria-label="${levelReward()} coins already added to your balance">Reward added</button>
-        <button class="complete-hotspot complete-hotspot-bonus${claimedClass}" data-action="complete-bonus" aria-label="${completeBonusClaimed ? `${levelReward()} bonus coins already claimed` : `Claim ${levelReward()} bonus coins`}" ${bonusDisabled}>${completeBonusClaimed ? "Claimed" : "Bonus"}</button>
-        <button class="complete-hotspot complete-hotspot-next" data-action="next" aria-label="Go to the next level">Next level</button>
-      </div>
-    </div>
-  </div>`;
+  return `<div class="modal-backdrop complete-backdrop"><div class="modal" role="dialog" aria-modal="true" aria-label="Level complete rewards"><h2>LEVEL COMPLETE!</h2>${renderPointsResult(lastLevelScore,weeklyPoints(scoreState().weekly))}<p>COINS EARNED</p><div class="earned-coins"><span class="coin-icon"></span><strong>${levelReward()}</strong></div>${button(completeBonusClaimed ? 'BONUS CLAIMED' : `WATCH AD +${levelReward()} COINS`,'action secondary','complete-bonus',completeBonusClaimed?'disabled':'')}<div class="modal-actions">${button('HOME','action secondary','complete-home')}${button('NEXT ›','action','next')}</div></div></div>`;
 }
 
 function modalView() {
@@ -504,8 +494,8 @@ function modalView() {
     const rewards = modal === "rewards";
     return `<div class="modal-backdrop"><div class="modal"><h2>${rewards ? "DAILY REWARDS" : "DAILY MISSIONS"}</h2><img class="modal-art" src="/assets/${rewards ? "rewards" : "missions"}.png" alt=""/><p>${rewards ? "Come back every day for more coins." : "Complete 3 levels and use one booster."}</p><div class="modal-actions">${button(rewards ? `CLAIM ${DAILY_REWARD_COINS}` : "GOT IT", "action", rewards ? "claim" : "close-modal")}</div></div></div>`;
   }
-  if (modal === "failed") return `<div class="modal-backdrop"><div class="modal"><h2>NO MOVES LEFT!</h2><div style="font-size:68px">💔</div><p>You lost 1 life. Try the level again or go back home.</p><div class="modal-actions">${button("HOME", "action secondary", "failed-home")}${button(`WATCH AD +${REWARDED_LIVES_AMOUNT} LIVES`, "action secondary", "rewarded-lives")}${button("RETRY", "action", "retry")}</div></div></div>`;
-  if (modal === "complete") return `<div class="modal-backdrop"><div class="modal"><h2>LEVEL COMPLETE!</h2><div style="font-size:70px">⭐⭐⭐</div><p>COINS EARNED</p><div class="earned-coins"><span class="coin-icon"></span><strong>${levelReward()}</strong></div><div class="modal-actions">${button("HOME", "action secondary", "complete-home")}${button("NEXT ›", "action", "next")}</div></div></div>`;
+  if (modal === "failed") return `<div class="modal-backdrop"><div class="modal"><h2>NO MOVES LEFT!</h2>${renderPointsResult(null,weeklyPoints(scoreState().weekly))}<div style="font-size:68px">💔</div><p>You lost 1 life. Try the level again or go back home.</p><div class="modal-actions">${button("HOME", "action secondary", "failed-home")}${button(`WATCH AD +${REWARDED_LIVES_AMOUNT} LIVES`, "action secondary", "rewarded-lives")}${button("RETRY", "action", "retry")}</div></div></div>`;
+  if (modal === "complete") return `<div class="modal-backdrop"><div class="modal"><h2>LEVEL COMPLETE!</h2>${renderPointsResult(lastLevelScore,weeklyPoints(scoreState().weekly))}<div style="font-size:70px">⭐⭐⭐</div><p>COINS EARNED</p><div class="earned-coins"><span class="coin-icon"></span><strong>${levelReward()}</strong></div><div class="modal-actions">${button("HOME", "action secondary", "complete-home")}${button("NEXT ›", "action", "next")}</div></div></div>`;
   if (modal === "support") {
     const config = getKemeSupportConfig();
     const nativeReady = supportState.nativeAvailable && supportState.nativeConfigured;
@@ -660,6 +650,11 @@ function finishMove(result, destination) {
     profile.unlocked = Math.min(TOTAL_LEVELS, Math.max(profile.unlocked, profile.level + 1));
     if (profile.level === 1) profile.tutorials = { ...profile.tutorials, level1: true };
     completeBonusClaimed = false;
+    const score=scoreState(); lastLevelScore=winPoints({firstTry:score.tries[profile.level]<=1,noBooster:!usedScoreBooster});
+    score.weekly.levels=(score.weekly.levels||0)+1; score.weekly.stars=(score.weekly.stars||0)+3;
+    score.weekly.firstTry=(score.weekly.firstTry||0)+(score.tries[profile.level]<=1?1:0);
+    score.weekly.noBooster=(score.weekly.noBooster||0)+(usedScoreBooster?0:1);
+    score.totals.stars+=3; score.totals.levels+=1;
     save();
     modal = "complete";
     render();
@@ -833,7 +828,7 @@ function shuffle() {
   history.push(structuredClone(tubes));
   tubes = tubes.map((_, i) => i < Math.ceil(marbles.length / 4) ? marbles.splice(0, 4) : []);
   playSound("booster", { volume: 0.72, rate: 1.04 });
-  profile.boosters.shuffle--; save(); render();
+  usedScoreBooster = true; profile.boosters.shuffle--; save(); render();
 }
 
 app.addEventListener("pointerdown", event => {
@@ -958,13 +953,13 @@ app.addEventListener("click", async event => {
   else if (action === "undo") {
     if (!history.length || !profile.boosters.undo) { playSound("invalid", { volume: 0.55 }); return showToast("Nothing to undo"); }
     playSound("booster", { volume: 0.72, rate: 0.96 });
-    tubes = history.pop(); profile.boosters.undo--; save(); render();
+    usedScoreBooster = true; tubes = history.pop(); profile.boosters.undo--; save(); render();
   }
   else if (action === "shuffle") shuffle();
   else if (action === "add-tube") {
     if (!profile.boosters.tube) { playSound("invalid", { volume: 0.55 }); return showToast("No add-tube boosters left"); }
     playSound("booster", { volume: 0.74, rate: 1.08 });
-    tubes.push([]); profile.boosters.tube--; save(); render();
+    usedScoreBooster = true; tubes.push([]); profile.boosters.tube--; save(); render();
   }
   else if (action === "failed-home") setView("home");
   else if (action === "retry") { playSound("levelStart", { volume: 0.74, rate: 1.02 }); beginLevel(); }
