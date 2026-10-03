@@ -1,3 +1,8 @@
+import { applyIdentity, saveIdentity, restoreIdentity, avatarImage, renderPlayerMenu } from "../public/assets/player-profile.js";
+import { weeklyPoints, winPoints, renderPointsResult, renderPointsGuide } from '../public/assets/leaderboard-points.js';
+import { renderStore } from '../public/assets/design-system.js';
+import { TOTAL_LEVELS, difficultyFor } from './challenges.js';
+import { installTimedChallengeRuntime } from '../public/assets/timed-challenge.js';
 import { LEVELS } from "./levels.js";
 import { canMove, hasAnyMoves, isTubeComplete, move, isSolved } from "./game-engine.js";
 import { addCoins, loseLife, refreshLives, MAX_LIVES } from "./economy.js";
@@ -17,8 +22,9 @@ import {
 const app = document.querySelector("#app");
 const STORAGE = "marble-sort-state-v1";
 const STATE_VERSION = 2;
-const WIN_REWARD_COINS = 40;
-const COMPLETE_BONUS_COINS = 80;
+const legacyHardLevels = new Set([30,35,39,44,48,53,57,62,66,71,75,80,84,89,93,98]);
+function levelReward() { return legacyHardLevels.has(profile.level) || profile.level > 100 && (difficultyFor(profile.level) === "hard" || profile.level % 5 === 0) ? 80 : 40; }
+
 const REWARDED_LIVES_AMOUNT = 2;
 const DEFAULT_COINS = 500;
 const DAILY_REWARD_COINS = 250;
@@ -61,8 +67,18 @@ function loadProfile() {
   return refreshLives(next);
 }
 
-let profile = loadProfile();
+let profile = applyIdentity(loadProfile());
+let editingPlayerName = false;
 let view = "loading";
+let lastLevelScore = null, usedScoreBooster = false;
+function scoreState() {
+  const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - (d.getDay()+6)%7);
+  const start = new Date(d.getFullYear(),0,1), week = Math.ceil(((d-start)/86400000 + start.getDay()+1)/7);
+  const season = `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
+  profile.lb ||= { season, league:'bronze', weekly:{}, totals:{stars:Math.max(0,profile.unlocked-1)*3,levels:Math.max(0,profile.unlocked-1)}, tries:{} };
+  if (profile.lb.season !== season) { profile.lb.season=season; profile.lb.weekly={}; }
+  return profile.lb;
+}
 let tubes = [];
 let selected = null;
 let history = [];
@@ -86,6 +102,17 @@ let supportState = {
   nativeIdentifiedUserId: "",
   nativeError: "",
 };
+
+const timedChallenge = installTimedChallengeRuntime({
+  root: app, inGame: () => view === 'game', modal: () => modal,
+  animating: () => moveAnimating, solved: () => isSolved(tubes), hasMoves: () => hasAnyMoves(tubes),
+  setModal: value => { modal = value; }, render,
+  rewardedContinue: showRewardedCoinsAd,
+  pointsSummary: () => renderPointsResult(null,weeklyPoints(scoreState().weekly)),
+  onContinue: () => playSound('reward', { volume: 0.8 }),
+  failureMessage: () => profile.unlimitedLivesUntil > Date.now() ? 'Unlimited lives are active. Retry with a fresh timer.' : 'You lost 1 life. Retry with a fresh timer.',
+  timeout: () => { if (!(profile.unlimitedLivesUntil > Date.now())) profile = loseLife(profile); save(); playSound('lose', { volume: 0.82 }); },
+});
 
 function defaultSupportDraft() {
   return {
@@ -115,14 +142,16 @@ function save() {
 }
 function setView(next) { view = next; modal = null; selected = null; moveAnimating = false; render(); syncBackgroundMusic(); }
 function showToast(message) { toast = message; render(); clearTimeout(transitionTimer); transitionTimer = setTimeout(() => { toast = ""; render(); }, 1700); }
-function levelData() { return LEVELS[Math.min(profile.level, 100) - 1]; }
+function levelData() { return LEVELS[Math.min(profile.level, TOTAL_LEVELS) - 1]; }
 function beginLevel() {
   profile = refreshLives(profile);
   completeBonusClaimed = false;
   if (profile.lives <= 0) {
     save(); render(); playSound("invalid", { volume: 0.56 }); showToast("No lives left. A new life arrives every 30 minutes."); return;
   }
+  const score = scoreState(); score.tries[profile.level] = (score.tries[profile.level] || 0) + 1; usedScoreBooster = false; lastLevelScore = null;
   tubes = structuredClone(levelData().tubes); history = []; selected = null; save(); setView("game");
+  timedChallenge.start(levelData()); render();
 }
 
 function button(label, cls, action, attrs = "") {
@@ -131,7 +160,7 @@ function button(label, cls, action, attrs = "") {
 
 async function showOptionalAd(showAd) {
   try {
-    return await showAd();
+    return await timedChallenge.withAd(showAd);
   } catch {
     return false;
   }
@@ -139,7 +168,7 @@ async function showOptionalAd(showAd) {
 
 function goToNextLevel() {
   playSound("levelStart", { volume: 0.76, rate: 1.03 });
-  profile.level = Math.min(100, profile.level + 1);
+  profile.level = Math.min(TOTAL_LEVELS, profile.level + 1);
   save();
   beginLevel();
 }
@@ -179,7 +208,7 @@ function homeView() {
     <div class="home-level-number" aria-label="Current level ${profile.level}"><span class="home-level-number-text">${profile.level}</span></div>
     <div class="home-life-value" aria-label="${profile.lives} of 5 lives"><span class="home-pill-text">${profile.lives}/5</span></div>
     <div class="home-coin-value"><span class="home-pill-text">${profile.coins.toLocaleString()}</span></div>
-    ${button("Menu", "hotspot home-menu", "settings")}
+    ${button("Menu", "hotspot home-menu", "menu")}
     ${button("Settings", "hotspot home-settings", "settings")}
     ${button("Coins", "hotspot home-coins", "store", 'aria-label="Open coin store"')}
     ${button("Rewards", "hotspot home-rewards", rewardsUnlocked ? "rewards" : "locked-rewards", `aria-label="${rewardsUnlocked ? "Open Daily Rewards" : "Daily Rewards unlock at level 5"}"`)}
@@ -236,12 +265,15 @@ function gameView() {
 }
 
 function storeView() {
-  return `<section class="screen panel-screen" style="padding:0">${button("‹", "icon-button store-back", "home", 'aria-label="Back"')}<img class="store-image" src="/assets/store.png" alt="Marble Sort store" /></section>`;
+  const products = {};
+  [5000,20000,50000].forEach((coins,i) => { products[['starter_bundle','pro_bundle','legend_bundle'][i]] = { grant: { coins, boostersEach:[10,25,50][i], unlimitedLivesMs:[2,12,24][i]*3600000, noAds:'lifetime' } }; });
+  [2500,6500,15000,35000,75000,160000].forEach((coins,i) => { products[`coin_pack_${i+1}`] = { grant: { coins } }; });
+  return renderStore({ coins:profile.coins, products, available:false });
 }
 
 function leaderboardView() {
   const names = ["Lina", "Fahad", "Maya", "Omar", "Noor", "You"];
-  return `<section class="screen panel-screen">${hud(true)}<div class="panel-header"><h1>LEADERBOARD</h1></div><div class="card leader-list">${names.map((name, i) => `<div class="leader-row"><strong>#${i + 1}</strong><span class="avatar">${name[0]}</span><span>${name} · ${Math.max(profile.level + 12 - i * 3, 1)}</span></div>`).join("")}</div></section>`;
+  return `<section class="screen lb-screen"><button class="ds-back" data-action="home" aria-label="Back to home">‹</button><header class="lb-header"><div class="lb-banner"><h1>LEADERBOARD</h1></div></header>${renderPointsGuide()}<div class="lb-panel"><p>Your weekly points: <strong>${weeklyPoints(scoreState().weekly)}</strong></p><div class="lb-list">${names.map((name, i) => `<div class="lb-row ${name === 'You' ? 'lb-row-you' : ''}"><strong class="lb-rank">${i + 1}</strong><span class="lb-avatar">${name === "You" ? avatarImage(profile.avatar) : '<img src="/assets/ball-blue.svg" alt="" />'}</span><span class="lb-name"><strong>${name}</strong><small>Level ${Math.max(profile.level + 12 - i * 3, 1)}</small></span></div>`).join("")}</div></div></section>`;
 }
 
 function escapeHtml(value) {
@@ -451,42 +483,24 @@ async function launchNativeSupport() {
 }
 
 function completeModalMarkup() {
-  const claimedClass = completeBonusClaimed ? " is-claimed" : "";
-  const bonusDisabled = completeBonusClaimed ? "disabled" : "";
-  return `<div class="modal-backdrop complete-backdrop">
-    <div class="complete-modal" role="dialog" aria-modal="true" aria-label="Level complete rewards">
-      <div class="complete-stars" aria-hidden="true">
-        <span class="complete-star-frame complete-star-left" style="--star-delay:0ms">
-          <img class="complete-star-art" src="/assets/complete-star.png" alt="" />
-        </span>
-        <span class="complete-star-frame complete-star-center" style="--star-delay:150ms">
-          <img class="complete-star-art" src="/assets/complete-star.png" alt="" />
-        </span>
-        <span class="complete-star-frame complete-star-right" style="--star-delay:300ms">
-          <img class="complete-star-art" src="/assets/complete-star.png" alt="" />
-        </span>
-      </div>
-      <div class="complete-card-shell">
-        <img class="complete-card-art" src="/assets/level-complete-card.svg" alt="Level complete reward popup" />
-        <button class="complete-hotspot complete-hotspot-reward" data-action="complete-reward" aria-label="${WIN_REWARD_COINS} coins already added to your balance">Reward added</button>
-        <button class="complete-hotspot complete-hotspot-bonus${claimedClass}" data-action="complete-bonus" aria-label="${completeBonusClaimed ? `${COMPLETE_BONUS_COINS} bonus coins already claimed` : `Claim ${COMPLETE_BONUS_COINS} bonus coins`}" ${bonusDisabled}>${completeBonusClaimed ? "Claimed" : "Bonus"}</button>
-        <button class="complete-hotspot complete-hotspot-next" data-action="next" aria-label="Go to the next level">Next level</button>
-      </div>
-    </div>
-  </div>`;
+  return `<div class="modal-backdrop complete-backdrop"><div class="modal" role="dialog" aria-modal="true" aria-label="Level complete rewards"><h2>LEVEL COMPLETE!</h2>${renderPointsResult(lastLevelScore,weeklyPoints(scoreState().weekly))}<p>COINS EARNED</p><div class="earned-coins"><span class="coin-icon"></span><strong>${levelReward()}</strong></div>${button(completeBonusClaimed ? 'BONUS CLAIMED' : `WATCH AD +${levelReward()} COINS`,'action secondary','complete-bonus',completeBonusClaimed?'disabled':'')}<div class="modal-actions">${button('HOME','action secondary','complete-home')}${button('NEXT ›','action','next')}</div></div></div>`;
 }
 
 function modalView() {
+  if (modal === "menu") return renderPlayerMenu({profile,name:profile.playerName || `Player${getKemeSupportConfig().gameUid.slice(-4).toUpperCase()}`,editing:editingPlayerName,id:getKemeSupportConfig().gameUid,version:'0.1.0 (26)',escape:escapeHtml,icon:name=>`<svg class="ui-icon" viewBox="0 0 24 24"><path fill="currentColor" d="${name==='pencil'?'M3 17v4h4L20 8l-4-4Z':name==='copy'?'M3 2h12v3H6v14H3zM8 7h13v15H8z':'M3 12a9 9 0 0 1 18 0v8h-6v-8h4a7 7 0 0 0-14 0h4v8H3z'}"/></svg>`,terms:'https://kemegames.com/legal/marble-sort/terms',privacy:'https://kemegames.com/legal/marble-sort/privacy-policy'});
+
+  if (modal === "timed-intro" || modal === "timed-failed") return timedChallenge.modalMarkup();
   if (!modal) return "";
   if (modal === "complete") return completeModalMarkup();
   if (modal === "settings") return `<div class="modal-backdrop"><div class="modal"><h2>SETTINGS</h2><p>Music ${profile.music ? "On" : "Off"}</p>${button(profile.music ? "TURN OFF" : "TURN ON", "action secondary", "toggle-music")}<p>Sound ${profile.sound ? "On" : "Off"}</p>${button(profile.sound ? "TURN OFF" : "TURN ON", "action secondary", "toggle-sound")}<p>Need help with support, billing, or account issues?</p>${button("CUSTOMER SUPPORT", "action secondary", "support")}<div class="modal-actions">${view === "game" ? button("HOME", "action secondary", "home") : ""}${button("CLOSE", "action", "close-modal")}</div></div></div>`;
+  if (modal === "deletion") return `<div class="modal-backdrop"><div class="modal"><h2>Account deletion</h2><p>Contact player support to request deletion of your account and game data.</p>${button("CONTACT SUPPORT","action","support")}${button("BACK","action secondary","menu")}</div></div>`;
   if (modal === "pause") return `<div class="modal-backdrop"><div class="modal"><h2>PAUSED</h2><div class="modal-actions">${button("HOME", "action secondary", "home")}${button("RESUME", "action", "close-modal")}</div></div></div>`;
   if (modal === "rewards" || modal === "missions") {
     const rewards = modal === "rewards";
     return `<div class="modal-backdrop"><div class="modal"><h2>${rewards ? "DAILY REWARDS" : "DAILY MISSIONS"}</h2><img class="modal-art" src="/assets/${rewards ? "rewards" : "missions"}.png" alt=""/><p>${rewards ? "Come back every day for more coins." : "Complete 3 levels and use one booster."}</p><div class="modal-actions">${button(rewards ? `CLAIM ${DAILY_REWARD_COINS}` : "GOT IT", "action", rewards ? "claim" : "close-modal")}</div></div></div>`;
   }
-  if (modal === "failed") return `<div class="modal-backdrop"><div class="modal"><h2>NO MOVES LEFT!</h2><div style="font-size:68px">💔</div><p>You lost 1 life. Try the level again or go back home.</p><div class="modal-actions">${button("HOME", "action secondary", "failed-home")}${button(`WATCH AD +${REWARDED_LIVES_AMOUNT} LIVES`, "action secondary", "rewarded-lives")}${button("RETRY", "action", "retry")}</div></div></div>`;
-  if (modal === "complete") return `<div class="modal-backdrop"><div class="modal"><h2>LEVEL COMPLETE!</h2><div style="font-size:70px">⭐⭐⭐</div><p>COINS EARNED</p><div class="earned-coins"><span class="coin-icon"></span><strong>${WIN_REWARD_COINS}</strong></div><div class="modal-actions">${button("HOME", "action secondary", "complete-home")}${button("NEXT ›", "action", "next")}</div></div></div>`;
+  if (modal === "failed") return `<div class="modal-backdrop"><div class="modal"><h2>NO MOVES LEFT!</h2>${renderPointsResult(null,weeklyPoints(scoreState().weekly))}<div style="font-size:68px">💔</div><p>You lost 1 life. Try the level again or go back home.</p><div class="modal-actions">${button("HOME", "action secondary", "failed-home")}${button(`WATCH AD +${REWARDED_LIVES_AMOUNT} LIVES`, "action secondary", "rewarded-lives")}${button("RETRY", "action", "retry")}</div></div></div>`;
+  if (modal === "complete") return `<div class="modal-backdrop"><div class="modal"><h2>LEVEL COMPLETE!</h2>${renderPointsResult(lastLevelScore,weeklyPoints(scoreState().weekly))}<div style="font-size:70px">⭐⭐⭐</div><p>COINS EARNED</p><div class="earned-coins"><span class="coin-icon"></span><strong>${levelReward()}</strong></div><div class="modal-actions">${button("HOME", "action secondary", "complete-home")}${button("NEXT ›", "action", "next")}</div></div></div>`;
   if (modal === "support") {
     const config = getKemeSupportConfig();
     const nativeReady = supportState.nativeAvailable && supportState.nativeConfigured;
@@ -515,6 +529,7 @@ function modalView() {
 function render() {
   const content = view === "loading" ? loadingView() : view === "home" ? homeView() : view === "game" ? gameView() : view === "store" ? storeView() : leaderboardView();
   app.innerHTML = `<div class="game-shell">${content}${modalView()}${toast ? `<div class="toast">${toast}</div>` : ""}</div>`;
+  timedChallenge.onRender();
 }
 
 function celebrateCompletedTube(index) {
@@ -622,6 +637,7 @@ function settleTubeMarbles(index, movedCount = 1) {
 }
 
 function finishMove(result, destination) {
+  const attempt = timedChallenge.attempt;
   tubes = result.tubes;
   selected = null;
   moveAnimating = false;
@@ -632,17 +648,24 @@ function finishMove(result, destination) {
   const resolutionDelay = completed ? completionDelay + 820 : 450;
   if (completed) setTimeout(() => celebrateCompletedTube(destination), completionDelay);
   if (isSolved(tubes)) setTimeout(() => {
+    if (attempt !== timedChallenge.attempt || view !== "game") return;
     playSound("levelComplete", { volume: 0.88 });
     setTimeout(() => playSound("reward", { volume: 0.56, rate: 1.04 }), 190);
-    profile = addCoins(profile, WIN_REWARD_COINS);
-    profile.unlocked = Math.min(100, Math.max(profile.unlocked, profile.level + 1));
+    profile = addCoins(profile, levelReward());
+    profile.unlocked = Math.min(TOTAL_LEVELS, Math.max(profile.unlocked, profile.level + 1));
     if (profile.level === 1) profile.tutorials = { ...profile.tutorials, level1: true };
     completeBonusClaimed = false;
+    const score=scoreState(); lastLevelScore=winPoints({firstTry:score.tries[profile.level]<=1,noBooster:!usedScoreBooster});
+    score.weekly.levels=(score.weekly.levels||0)+1; score.weekly.stars=(score.weekly.stars||0)+3;
+    score.weekly.firstTry=(score.weekly.firstTry||0)+(score.tries[profile.level]<=1?1:0);
+    score.weekly.noBooster=(score.weekly.noBooster||0)+(usedScoreBooster?0:1);
+    score.totals.stars+=3; score.totals.levels+=1;
     save();
     modal = "complete";
     render();
   }, resolutionDelay);
   else if (!hasAnyMoves(tubes)) setTimeout(() => {
+    if (attempt !== timedChallenge.attempt || view !== "game") return;
     playSound("lose", { volume: 0.82 });
     profile = loseLife(profile);
     save();
@@ -797,6 +820,7 @@ function chooseTube(index) {
   const from = selected;
   const result = move(tubes, from, index);
   moveAnimating = true;
+  timedChallenge.sync();
   animateTransfer(from, index, result);
 }
 
@@ -809,7 +833,7 @@ function shuffle() {
   history.push(structuredClone(tubes));
   tubes = tubes.map((_, i) => i < Math.ceil(marbles.length / 4) ? marbles.splice(0, 4) : []);
   playSound("booster", { volume: 0.72, rate: 1.04 });
-  profile.boosters.shuffle--; save(); render();
+  usedScoreBooster = true; profile.boosters.shuffle--; save(); render();
 }
 
 app.addEventListener("pointerdown", event => {
@@ -862,7 +886,12 @@ app.addEventListener("click", async event => {
   else if (action === "locked-rewards") showToast("Daily Rewards unlock at level 5");
   else if (action === "locked-missions") showToast("Daily Missions unlock at level 7");
   else if (action === "support") { modal = "support"; render(); refreshSupportData(); refreshNativeSupportState(); }
-  else if (["settings", "rewards", "missions", "pause"].includes(action)) { modal = action; render(); }
+  else if (action === "menu-avatar-choice") { profile.avatar=Number(target.dataset.avatar); saveIdentity(profile); save(); render(); }
+  else if (action === "menu-edit-name") { if(editingPlayerName){profile.playerName=app.querySelector('.menu-name-input').value.trim().slice(0,18);saveIdentity(profile);save();} editingPlayerName=!editingPlayerName;render(); if(editingPlayerName)app.querySelector('.menu-name-input').focus(); }
+  else if (action === "copy-player-id") { try { await navigator.clipboard.writeText(getKemeSupportConfig().gameUid);showToast('Player ID copied'); } catch { showToast('Unable to copy Player ID'); } }
+  else if (action === "legal-online") window.open(target.dataset.url,'_blank','noopener');
+  else if (action === "menu-doc") { modal='deletion';render(); }
+  else if (["menu", "settings", "rewards", "missions", "pause"].includes(action)) { modal = action; render(); }
   else if (action === "close-modal") { modal = null; render(); }
   else if (action === "toggle-music") {
     playSound("uiTap", { volume: 0.54 });
@@ -893,7 +922,7 @@ app.addEventListener("click", async event => {
   }
   else if (action === "complete-reward") {
     playSound("reward", { volume: 0.62, rate: 1.02 });
-    showToast(`${WIN_REWARD_COINS} coins added`);
+    showToast(`${levelReward()} coins added`);
   }
   else if (action === "complete-bonus") {
     if (completeBonusClaimed) { playSound("invalid", { volume: 0.5 }); showToast("Bonus already claimed"); return; }
@@ -907,11 +936,11 @@ app.addEventListener("click", async event => {
       return;
     }
     playSound("reward", { volume: 0.82, rate: 1.06 });
-    profile = addCoins(profile, COMPLETE_BONUS_COINS);
+    profile = addCoins(profile, levelReward());
     completeBonusClaimed = true;
     save();
     render();
-    showToast(`${COMPLETE_BONUS_COINS} bonus coins added`);
+    showToast(`${levelReward()} bonus coins added`);
   }
   else if (action === "rewarded-lives") {
     target.disabled = true;
@@ -934,13 +963,13 @@ app.addEventListener("click", async event => {
   else if (action === "undo") {
     if (!history.length || !profile.boosters.undo) { playSound("invalid", { volume: 0.55 }); return showToast("Nothing to undo"); }
     playSound("booster", { volume: 0.72, rate: 0.96 });
-    tubes = history.pop(); profile.boosters.undo--; save(); render();
+    usedScoreBooster = true; tubes = history.pop(); profile.boosters.undo--; save(); render();
   }
   else if (action === "shuffle") shuffle();
   else if (action === "add-tube") {
     if (!profile.boosters.tube) { playSound("invalid", { volume: 0.55 }); return showToast("No add-tube boosters left"); }
     playSound("booster", { volume: 0.74, rate: 1.08 });
-    tubes.push([]); profile.boosters.tube--; save(); render();
+    usedScoreBooster = true; tubes.push([]); profile.boosters.tube--; save(); render();
   }
   else if (action === "failed-home") setView("home");
   else if (action === "retry") { playSound("levelStart", { volume: 0.74, rate: 1.02 }); beginLevel(); }
@@ -949,7 +978,7 @@ app.addEventListener("click", async event => {
     await showOptionalAd(showInterstitialAd);
     goToNextLevel();
   }
-  else if (action === "complete-home") { profile.level = Math.min(100, Math.max(profile.level + 1, profile.unlocked)); save(); setView("home"); }
+  else if (action === "complete-home") { profile.level = Math.min(TOTAL_LEVELS, Math.max(profile.level + 1, profile.unlocked)); save(); setView("home"); }
 });
 
 function updateSupportDraft(event) {
@@ -971,3 +1000,5 @@ document.addEventListener("visibilitychange", () => {
 render();
 syncBackgroundMusic();
 setTimeout(() => { if (view === "loading") setView("home"); }, 3000);
+
+restoreIdentity(profile).then(()=>{applyIdentity(profile);save();render();});
