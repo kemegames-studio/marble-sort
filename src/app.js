@@ -1,3 +1,4 @@
+import { applyIdentity, saveIdentity, restoreIdentity, avatarImage, renderPlayerMenu } from "../public/assets/player-profile.js";
 import { weeklyPoints, winPoints, renderPointsResult, renderPointsGuide } from '../public/assets/leaderboard-points.js';
 import { renderStore } from '../public/assets/design-system.js';
 import { TOTAL_LEVELS, difficultyFor } from './challenges.js';
@@ -66,7 +67,8 @@ function loadProfile() {
   return refreshLives(next);
 }
 
-let profile = loadProfile();
+let profile = applyIdentity(loadProfile());
+let editingPlayerName = false;
 let view = "loading";
 let lastLevelScore = null, usedScoreBooster = false;
 function scoreState() {
@@ -206,7 +208,7 @@ function homeView() {
     <div class="home-level-number" aria-label="Current level ${profile.level}"><span class="home-level-number-text">${profile.level}</span></div>
     <div class="home-life-value" aria-label="${profile.lives} of 5 lives"><span class="home-pill-text">${profile.lives}/5</span></div>
     <div class="home-coin-value"><span class="home-pill-text">${profile.coins.toLocaleString()}</span></div>
-    ${button("Menu", "hotspot home-menu", "settings")}
+    ${button("Menu", "hotspot home-menu", "menu")}
     ${button("Settings", "hotspot home-settings", "settings")}
     ${button("Coins", "hotspot home-coins", "store", 'aria-label="Open coin store"')}
     ${button("Rewards", "hotspot home-rewards", rewardsUnlocked ? "rewards" : "locked-rewards", `aria-label="${rewardsUnlocked ? "Open Daily Rewards" : "Daily Rewards unlock at level 5"}"`)}
@@ -271,7 +273,7 @@ function storeView() {
 
 function leaderboardView() {
   const names = ["Lina", "Fahad", "Maya", "Omar", "Noor", "You"];
-  return `<section class="screen lb-screen"><button class="ds-back" data-action="home" aria-label="Back to home">‹</button><header class="lb-header"><div class="lb-banner"><h1>LEADERBOARD</h1></div></header>${renderPointsGuide()}<div class="lb-panel"><p>Your weekly points: <strong>${weeklyPoints(scoreState().weekly)}</strong></p><div class="lb-list">${names.map((name, i) => `<div class="lb-row ${name === 'You' ? 'lb-row-you' : ''}"><strong class="lb-rank">${i + 1}</strong><span class="lb-avatar"><img src="/assets/ball-blue.svg" alt="" /></span><span class="lb-name"><strong>${name}</strong><small>Level ${Math.max(profile.level + 12 - i * 3, 1)}</small></span></div>`).join("")}</div></div></section>`;
+  return `<section class="screen lb-screen"><button class="ds-back" data-action="home" aria-label="Back to home">‹</button><header class="lb-header"><div class="lb-banner"><h1>LEADERBOARD</h1></div></header>${renderPointsGuide()}<div class="lb-panel"><p>Your weekly points: <strong>${weeklyPoints(scoreState().weekly)}</strong></p><div class="lb-list">${names.map((name, i) => `<div class="lb-row ${name === 'You' ? 'lb-row-you' : ''}"><strong class="lb-rank">${i + 1}</strong><span class="lb-avatar">${name === "You" ? avatarImage(profile.avatar) : '<img src="/assets/ball-blue.svg" alt="" />'}</span><span class="lb-name"><strong>${name}</strong><small>Level ${Math.max(profile.level + 12 - i * 3, 1)}</small></span></div>`).join("")}</div></div></section>`;
 }
 
 function escapeHtml(value) {
@@ -485,10 +487,13 @@ function completeModalMarkup() {
 }
 
 function modalView() {
+  if (modal === "menu") return renderPlayerMenu({profile,name:profile.playerName || `Player${getKemeSupportConfig().gameUid.slice(-4).toUpperCase()}`,editing:editingPlayerName,id:getKemeSupportConfig().gameUid,version:'0.1.0 (26)',escape:escapeHtml,icon:name=>`<svg class="ui-icon" viewBox="0 0 24 24"><path fill="currentColor" d="${name==='pencil'?'M3 17v4h4L20 8l-4-4Z':name==='copy'?'M3 2h12v3H6v14H3zM8 7h13v15H8z':'M3 12a9 9 0 0 1 18 0v8h-6v-8h4a7 7 0 0 0-14 0h4v8H3z'}"/></svg>`,terms:'https://kemegames.com/legal/marble-sort/terms',privacy:'https://kemegames.com/legal/marble-sort/privacy-policy'});
+
   if (modal === "timed-intro" || modal === "timed-failed") return timedChallenge.modalMarkup();
   if (!modal) return "";
   if (modal === "complete") return completeModalMarkup();
   if (modal === "settings") return `<div class="modal-backdrop"><div class="modal"><h2>SETTINGS</h2><p>Music ${profile.music ? "On" : "Off"}</p>${button(profile.music ? "TURN OFF" : "TURN ON", "action secondary", "toggle-music")}<p>Sound ${profile.sound ? "On" : "Off"}</p>${button(profile.sound ? "TURN OFF" : "TURN ON", "action secondary", "toggle-sound")}<p>Need help with support, billing, or account issues?</p>${button("CUSTOMER SUPPORT", "action secondary", "support")}<div class="modal-actions">${view === "game" ? button("HOME", "action secondary", "home") : ""}${button("CLOSE", "action", "close-modal")}</div></div></div>`;
+  if (modal === "deletion") return `<div class="modal-backdrop"><div class="modal"><h2>Account deletion</h2><p>Contact player support to request deletion of your account and game data.</p>${button("CONTACT SUPPORT","action","support")}${button("BACK","action secondary","menu")}</div></div>`;
   if (modal === "pause") return `<div class="modal-backdrop"><div class="modal"><h2>PAUSED</h2><div class="modal-actions">${button("HOME", "action secondary", "home")}${button("RESUME", "action", "close-modal")}</div></div></div>`;
   if (modal === "rewards" || modal === "missions") {
     const rewards = modal === "rewards";
@@ -881,7 +886,12 @@ app.addEventListener("click", async event => {
   else if (action === "locked-rewards") showToast("Daily Rewards unlock at level 5");
   else if (action === "locked-missions") showToast("Daily Missions unlock at level 7");
   else if (action === "support") { modal = "support"; render(); refreshSupportData(); refreshNativeSupportState(); }
-  else if (["settings", "rewards", "missions", "pause"].includes(action)) { modal = action; render(); }
+  else if (action === "menu-avatar-choice") { profile.avatar=Number(target.dataset.avatar); saveIdentity(profile); save(); render(); }
+  else if (action === "menu-edit-name") { if(editingPlayerName){profile.playerName=app.querySelector('.menu-name-input').value.trim().slice(0,18);saveIdentity(profile);save();} editingPlayerName=!editingPlayerName;render(); if(editingPlayerName)app.querySelector('.menu-name-input').focus(); }
+  else if (action === "copy-player-id") { try { await navigator.clipboard.writeText(getKemeSupportConfig().gameUid);showToast('Player ID copied'); } catch { showToast('Unable to copy Player ID'); } }
+  else if (action === "legal-online") window.open(target.dataset.url,'_blank','noopener');
+  else if (action === "menu-doc") { modal='deletion';render(); }
+  else if (["menu", "settings", "rewards", "missions", "pause"].includes(action)) { modal = action; render(); }
   else if (action === "close-modal") { modal = null; render(); }
   else if (action === "toggle-music") {
     playSound("uiTap", { volume: 0.54 });
@@ -990,3 +1000,5 @@ document.addEventListener("visibilitychange", () => {
 render();
 syncBackgroundMusic();
 setTimeout(() => { if (view === "loading") setView("home"); }, 3000);
+
+restoreIdentity(profile).then(()=>{applyIdentity(profile);save();render();});
